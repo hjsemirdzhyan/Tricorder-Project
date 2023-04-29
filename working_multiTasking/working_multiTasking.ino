@@ -1,3 +1,12 @@
+/*
+  This sketch is an attempt at running multiple sensors at once. The hope is that I can get all sensors to function at the same time without
+  needing to use the delay function. Future plans will include having a specific function that displays output of sensors that obeys their polling times.
+  Probably going to be its own sketch. 
+
+  Current progress:
+  - LED Blink on pin 13
+  - Temp/Humidity sensor on pin A0
+*/
 
 #include "dht.h"
 #define dht_apin A0
@@ -52,6 +61,7 @@ public:
   }
 };
 
+// ATTEMPTING to make this class a generic polling class that can be used for any sensor. Right now it works on the temp sensor. 
 class pollSensor {
   long pollTime;               // how often in milliseconds to poll the temp sensor
   unsigned long previousPoll;  // will store last time temp/humid reading was updated
@@ -62,7 +72,7 @@ public:
     previousPoll = 0;
   }
 
-  bool Update() {  // is it ok to continue to name these "update"?
+  bool Update() {
     unsigned long currentTime = millis();
 
     if (currentTime - previousPoll >= pollTime) {
