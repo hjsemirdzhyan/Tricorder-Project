@@ -11,7 +11,8 @@
 #include "dht.h"
 #define dht_apin A0
 dht DHT;
-
+const int pingPin = 7;  // Trigger Pin of Ultrasonic Sensor
+const int echoPin = 6;  // Echo Pin of Ultrasonic Sensor
 
 ///////////////////////////////////Classes stored here///////////////////////////////////
 class Flasher {  // can probably reuse this for other LEDs that need to flash.
@@ -87,6 +88,9 @@ public:
 ///////////////////////////////////Inits stored here///////////////////////////////////
 Flasher led1(13, 5000, 5000);
 pollSensor sensor1(5000);
+pollSensor sensor2PollDelay(100);
+pollSensor sensor2ClearTime(2);
+pollSensor sensor2BurstTime(10);
 
 ///////////////////////////////////Setup and loop stored here///////////////////////////////////
 void setup() {
@@ -96,6 +100,7 @@ void setup() {
 void loop() {
   led1.Update();
   tempResults();
+  sonarResults();
 }
 
 ///////////////////////////////////Functions stored here///////////////////////////////////
@@ -111,6 +116,32 @@ void tempResults() {
   }
 }
 
+void sonarResults() {
+  if (sensor2PollDelay.Update() == true) {
+    long duration;
+    long inches;
+    long cm;
+    pinMode(pingPin, OUTPUT);
+    pinMode(echoPin, INPUT);
+    digitalWrite(pingPin, LOW);
+    if (sensor2ClearTime.Update() == true) {
+      digitalWrite(pingPin, HIGH);
+    }
+    if (sensor2BurstTime.Update() == true) {
+      digitalWrite(pingPin, LOW);
+    }
+    duration = pulseIn(echoPin, HIGH);
+    inches = duration / 74 / 2;
+    cm = duration / 29 / 2;
+    Serial.print(duration);
+    Serial.print("ms, ");
+    Serial.print(inches);
+    Serial.print("in, ");
+    Serial.print(cm);
+    Serial.print("cm");
+    Serial.println();
+  }
+}
 // void flashResults(int pin, int state) {
 //   digitalWrite(pin, state);
 //   Serial.print("LED State = ");
