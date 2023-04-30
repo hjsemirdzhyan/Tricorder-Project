@@ -1,27 +1,37 @@
 /*
-  This is where I'll copy/paste all my known working code. This is the eventual sketch getting uploaded to the full product. Hopefully.
+  This is the mother sketch.
+
+  Current progress:
+  - LED Blink on pin 13
+  - Temp/Humidity sensor on pin A0
+  - Ultrasonic Sensor on pins 6 and 7
+  - Multibutton module on pin A1
 */
 
 #include "dht.h"
+
 #define dht_apin A0
+#define btn_apin A1
+#define RANGE 5
+#define SW1 RANGE
+#define SW2 142
+#define SW3 327
+#define SW4 504
+#define SW5 741
 dht DHT;
+
 const int pingPin = 7;  // Trigger Pin of Ultrasonic Sensor
 const int echoPin = 6;  // Echo Pin of Ultrasonic Sensor
 
 ///////////////////////////////////Classes stored here///////////////////////////////////
-class Flasher {  // can probably reuse this for other LEDs that need to flash.
-  // Class Member Variables
-  // These are initialized at startup
-  int ledPin;    // the number of the LED pin
-  long OnTime;   // milliseconds of on-time
-  long OffTime;  // milliseconds of off-time
+class Flasher {
+  int ledPin;
+  long OnTime;
+  long OffTime;
 
-  // These maintain the current state
-  int ledState;                  // ledState used to set the LED
-  unsigned long previousMillis;  // will store last time LED was updated
+  int ledState;
+  unsigned long previousMillis;
 
-  // Constructor - creates a Flasher
-  // and initializes the member variables and state
 public:
   Flasher(int pin, long on, long off) {
     ledPin = pin;
@@ -35,42 +45,40 @@ public:
   }
 
   void Update() {
-    // check to see if it's time to change the state of the LED
     unsigned long currentMillis = millis();
 
     if ((ledState == HIGH) && (currentMillis - previousMillis >= OnTime)) {
-      ledState = LOW;                  // Turn it off
-      previousMillis = currentMillis;  // Remember the time
-      digitalWrite(ledPin, ledState);        // Update the actual LED
+      ledState = LOW;
+      previousMillis = currentMillis;
+      digitalWrite(ledPin, ledState);
       Serial.print("LED State = ");
       Serial.print(ledState);
-      Serial.print(" ");
+      Serial.println(" ");
     } else if ((ledState == LOW) && (currentMillis - previousMillis >= OffTime)) {
-      ledState = HIGH;                 // turn it on
-      previousMillis = currentMillis;  // Remember the time
-      digitalWrite(ledPin, ledState);        // Update the actual LED
+      ledState = HIGH;
+      previousMillis = currentMillis;
+      digitalWrite(ledPin, ledState);
       Serial.print("LED State = ");
       Serial.print(ledState);
-      Serial.print(" ");
+      Serial.println(" ");
     }
   }
 };
 
-// ATTEMPTING to make this class a generic polling class that can be used for any sensor. Right now it works on the temp sensor. 
-class pollSensor {
-  long pollTime;               // how often in milliseconds to poll the temp sensor
-  unsigned long previousPoll;  // will store last time temp/humid reading was updated
+class DelayTimer {
+  long delayTime;
+  unsigned long previousPoll;
 
 public:
-  pollSensor(long time) {
-    pollTime = time;
+  DelayTimer(long time) {
+    delayTime = time;
     previousPoll = 0;
   }
 
   bool Update() {
     unsigned long currentTime = millis();
 
-    if (currentTime - previousPoll >= pollTime) {
+    if (currentTime - previousPoll >= delayTime) {
       previousPoll = currentTime;
       return true;
     } else {
@@ -80,11 +88,11 @@ public:
 };
 
 ///////////////////////////////////Inits stored here///////////////////////////////////
-Flasher led1(13, 5000, 5000);
-pollSensor sensor1(5000);
-pollSensor sensor2PollDelay(100);
-pollSensor sensor2ClearTime(2);
-pollSensor sensor2BurstTime(10);
+Flasher led1(13, 1000, 1000);
+DelayTimer tempSensor(3000);
+DelayTimer sensor2PollDelay(100);
+DelayTimer sensor2ClearTime(2);
+DelayTimer sensor2BurstTime(10);
 
 ///////////////////////////////////Setup and loop stored here///////////////////////////////////
 void setup() {
@@ -92,14 +100,20 @@ void setup() {
 }
 
 void loop() {
-  led1.Update();
-  tempResults();
-  sonarResults();
+  if (buttonState() == 1) {
+    led1.Update();
+  }
+  if (buttonState() == 2) {
+    tempResults();
+  }
+  if (buttonState() == 3) {
+    sonarResults();
+  }
 }
 
 ///////////////////////////////////Functions stored here///////////////////////////////////
 void tempResults() {
-  if (sensor1.Update() == true) {
+  if (tempSensor.Update() == true) {
     DHT.read11(dht_apin);
     Serial.print("humidity = ");
     Serial.print(DHT.humidity);
@@ -137,3 +151,24 @@ void sonarResults() {
   }
 }
 
+int buttonState() {
+  int state = 0;
+  state = analogRead(btn_apin);
+  if (SW1 - RANGE <= state && state < RANGE + SW1) {
+    return 1;
+  }
+  if (SW2 - RANGE < state && state < RANGE + SW2) {
+    return 2;
+  }
+  if (SW3 - RANGE < state && state < RANGE + SW3) {
+    return 3;
+  }
+  if (SW4 - RANGE < state && state < RANGE + SW4) {
+    return 4;
+  }
+  if (SW5 - RANGE < state && state < RANGE + SW5) {
+    return 5;
+  } else {
+    return 0;
+  }
+}
