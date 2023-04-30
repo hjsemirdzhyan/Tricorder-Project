@@ -136,9 +136,4 @@ void sonarResults() {
     Serial.println();
   }
 }
-// void flashResults(int pin, int state) {
-//   digitalWrite(pin, state);
-//   Serial.print("LED State = ");
-//   Serial.print(state);
-//   Serial.print(" ");
-// }
+

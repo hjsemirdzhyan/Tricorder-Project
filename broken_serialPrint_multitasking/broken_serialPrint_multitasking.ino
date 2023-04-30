@@ -11,43 +11,6 @@ const int pingPin = 7;
 const int echoPin = 6;
 
 ///////////////////////////////////Classes stored here///////////////////////////////////
-class Flasher {
-  int ledPin;
-  long OnTime;
-  long OffTime;
-  int ledState;
-  unsigned long previousMillis;
-public:
-  Flasher(int pin, long on, long off) {
-    ledPin = pin;
-    pinMode(ledPin, OUTPUT);
-
-    OnTime = on;
-    OffTime = off;
-
-    ledState = LOW;
-    previousMillis = 0;
-  }
-
-  void Update() {
-    unsigned long currentMillis = millis();
-    if ((ledState == HIGH) && (currentMillis - previousMillis >= OnTime)) {
-      ledState = LOW;
-      previousMillis = currentMillis;
-      digitalWrite(ledPin, ledState);
-      Serial.print("LED State = ");
-      Serial.print(ledState);
-      Serial.println(" ");
-    } else if ((ledState == LOW) && (currentMillis - previousMillis >= OffTime)) {
-      ledState = HIGH;
-      previousMillis = currentMillis;
-      digitalWrite(ledPin, ledState);
-      Serial.print("LED State = ");
-      Serial.print(ledState);
-      Serial.println(" ");
-    }
-  }
-};
 
 class pollSensor {
   long pollTime;
@@ -84,9 +47,9 @@ void setup() {
 }
 
 void loop() {
-  ledResults();
-  tempResults();
-  sonarResults();
+  //ledResults();
+  //tempResults();
+  //sonarResults();
 }
 
 ///////////////////////////////////Functions stored here///////////////////////////////////
@@ -130,24 +93,21 @@ void sonarResults() {
   }
 }
 
-void ledResults() {
-  if (led1PollDelay.Update() == true) {
-    int ledPin;
-    long OnTime;
-    long OffTime;
-    int ledState;
-    if ((ledState == HIGH) && (led1OnTime.Update() == true)) {
-      ledState = LOW;
-      digitalWrite(ledPin, ledState);
-      Serial.print("LED State = ");
-      Serial.print(ledState);
-      Serial.println(" ");
-    } else if ((ledState == LOW) && (led1OffTIme.Update() == true)) {
-      ledState = HIGH;
-      digitalWrite(ledPin, ledState);
-      Serial.print("LED State = ");
-      Serial.print(ledState);
-      Serial.println(" ");
-    }
-  }
-}
+// void ledResults() {
+//   int ledPin;
+//   long OnTime;
+//   long OffTime;
+//   int ledState;
+//   if (led1PollDelay.Update() == true) {
+//     if ((ledState == HIGH) && (led1OnTime.Update() == true)) {
+//       ledState = LOW;
+//       digitalWrite(ledPin, ledState);
+//     } else if ((ledState == LOW) && (led1OffTIme.Update() == true)) {
+//       ledState = HIGH;
+//       digitalWrite(ledPin, ledState);
+//     }
+//     Serial.print("LED State = ");
+//     Serial.print(ledState);
+//     Serial.println(" ");
+//   }
+// }
