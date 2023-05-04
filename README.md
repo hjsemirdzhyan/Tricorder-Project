@@ -1,4 +1,7 @@
 # Tricorder
+
+![image](https://user-images.githubusercontent.com/70782656/236332382-bcf56a1f-6522-419e-805b-ac4f0d44fce2.png)
+
 End goal is to have a functional sensor device
 
 Arduino Tricorder Ideas
