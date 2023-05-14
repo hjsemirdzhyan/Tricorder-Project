@@ -1,8 +1,8 @@
 #include <Adafruit_ST7735.h>
 
 #define TFT_CS 10
-#define TFT_DC -1
-#define TFT_RST 8
+#define TFT_DC 8
+#define TFT_RST -1
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
@@ -20,8 +20,8 @@ int numOptions = 4;
 void setup() {
   Serial.begin(9600);
   tft.initR(INITR_144GREENTAB);
-  tft.setFont();
   tft.fillScreen(ST7735_BLACK);
+  tft.setCursor(0, 0);
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(2);
   tft.println("Menu:");
@@ -31,7 +31,6 @@ void setup() {
   tft.println("Option 3");
   tft.println("Option 4");
   tft.drawRect(0, (selectedOption * 10) + 22, 128, 10, ST7735_WHITE);
-  tft.enableDisplay(true);
 }
 
 void loop() {
@@ -92,7 +91,6 @@ void selectOption() {
       Serial.println("Option 3 selected");
       break;
     case 3:
-      // Option 4 selected
       Serial.println("Option 4 selected");
       break;
   }

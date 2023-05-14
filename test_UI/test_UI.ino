@@ -1,0 +1,162 @@
+#include <Adafruit_ST7735.h>
+
+#define TFT_CS 10
+#define TFT_DC 8
+#define TFT_RST -1
+
+#define btn_apin A0
+#define RANGE 20
+#define SW1 RANGE
+#define SW2 155
+#define SW3 340
+#define SW4 515
+#define SW5 760
+
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+
+int defaultOption = 1;
+int selectedOption = defaultOption;
+int numOptions = 4;
+bool menuOpen = false;
+const uint16_t Display_Color = ST7735_BLUE;
+const uint16_t Text_Color = ST7735_WHITE;
+
+class DelayTimer {
+  long delayTime;
+  unsigned long previousPoll;
+
+public:
+  DelayTimer(long time) {
+    delayTime = time;
+    previousPoll = 0;
+  }
+
+  bool Update() {
+    unsigned long currentTime = millis();
+
+    if (currentTime - previousPoll >= delayTime) {
+      previousPoll = currentTime;
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+DelayTimer bugginShiz(250);
+DelayTimer buttonDelay(250);
+
+int buttonState() {
+  int state = analogRead(btn_apin);
+  if (buttonDelay.Update() == true) {
+    if (SW1 - RANGE <= state && state < RANGE + SW1) {
+      return 1;
+    }
+    if (SW2 - RANGE < state && state < RANGE + SW2) {
+      return 2;
+    }
+    if (SW3 - RANGE < state && state < RANGE + SW3) {
+      return 3;
+    }
+    if (SW4 - RANGE < state && state < RANGE + SW4) {
+      return 4;
+    }
+    if (SW5 - RANGE < state && state < RANGE + SW5) {
+      return 5;
+    } else {
+      return 0;
+    }
+  }
+}
+
+void startupMenu() {
+  tft.initR(INITR_144GREENTAB);
+  tft.fillScreen(Display_Color);
+  tft.setCursor(0, 0);
+  tft.setTextColor(Text_Color);
+  tft.setTextSize(2);
+  tft.println("Menu:");
+  tft.setTextSize(1);
+  tft.println("- Option 1");
+  tft.println("- Option 2");
+  tft.println("- Option 3");
+  tft.println("- Option 4");
+  //tft.drawRect(0, 15, 128, 10, ST7735_RED);
+}
+
+void option1Menu() {
+  tft.fillScreen(Display_Color);
+  tft.setCursor(0, 0);
+  tft.setTextColor(Text_Color);
+  tft.setTextSize(2);
+  tft.println("Option 1:");
+  tft.setTextSize(1);
+  tft.println("This is some stuff from option 1 menu");
+}
+
+void option2Menu() {
+  tft.fillScreen(Display_Color);
+  tft.setCursor(0, 0);
+  tft.setTextColor(Text_Color);
+  tft.setTextSize(2);
+  tft.println("Option 2:");
+  tft.setTextSize(1);
+  tft.println("How now brown cow?");
+}
+
+void openOption() {
+  if (selectedOption == 1) {
+    option1Menu();
+  }
+  if (selectedOption == 2) {
+    option2Menu();
+  }
+}
+
+void debugStuff() {
+  if (bugginShiz.Update() == true) {
+    Serial.print("selectedOption = ");
+    Serial.println(selectedOption);
+
+    Serial.print("menuOpen = ");
+    Serial.println(menuOpen);
+
+    Serial.print("cursorX&Y = ");
+    Serial.print(tft.getCursorX());
+    Serial.print(", ");
+    Serial.println(tft.getCursorY());
+  }
+}
+
+void setup() {
+  Serial.begin(9600);
+  startupMenu();
+}
+
+void loop() {
+  if (buttonState() == 3) {
+    selectedOption++;
+  }
+  if (buttonState() == 2) {
+    selectedOption--;
+  }
+  if (buttonState() == 4) {
+    openOption();
+    menuOpen = true;
+  }
+  if (buttonState() == 1) {
+    if (menuOpen == true) {
+      startupMenu();
+      menuOpen = false;
+    } else {
+      selectedOption = defaultOption;
+    }
+  }
+  if (selectedOption > numOptions) {
+    selectedOption = defaultOption;
+  }
+  if (selectedOption < defaultOption) {
+    selectedOption = numOptions;
+  }
+ // debugStuff();
+}

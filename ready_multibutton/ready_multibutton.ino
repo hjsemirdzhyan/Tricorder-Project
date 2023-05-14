@@ -9,8 +9,8 @@
 */
 #include "dht.h"
 
-#define dht_apin A0
-#define btn_apin A1
+#define dht_apin A1
+#define btn_apin A0
 #define RANGE 5
 #define SW1 RANGE
 #define SW2 142
@@ -50,6 +50,9 @@ void setup() {
 void loop() {
   if (buttonState() == 1) {
     tempResults();
+  }
+  if (buttonState() == 2) {
+    Serial.println("2");
   }
 }
 
