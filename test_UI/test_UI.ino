@@ -1,4 +1,5 @@
 #include <Adafruit_ST7735.h>
+#include <Arduino.h>
 
 #define TFT_CS 10
 #define TFT_DC 8
@@ -16,11 +17,12 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 int defaultOption = 1;
 int selectedOption = defaultOption;
-int numOptions = 4;
 bool menuOpen = false;
 const uint16_t Display_Color = ST7735_BLUE;
 const uint16_t Text_Color = ST7735_WHITE;
 
+
+// Classes -------------------------------------------------------------------------------------------------------
 class DelayTimer {
   long delayTime;
   unsigned long previousPoll;
@@ -43,8 +45,45 @@ public:
   }
 };
 
+class Menu {
+  String menuName = "";  // may be redundant if i have to use an array to name all the menus.
+  int menuNumber = 0;             // menu number
+  int belongsTo = 0;              // if it's a submenu, to which menu it belongs
+  int position = 0;               // if it's a submenu, where in the list of its parent menu does this menu appear
+  bool openState = false;         // true when open
+  int numOfItems = 0;             // number of other menus or funcitons inside this one
+public:
+  Menu(int num, int belongs, int order, String name) {
+    menuNumber = num;
+    belongsTo = belongs;
+    position = order;
+    menuName = name;
+  }
+
+  void draw(Menu* objects, int arraySize) { //Please note that the size of the object array (arraySize) is also passed to ensure you're accessing valid elements within the array bounds.
+    tft.initR(INITR_144GREENTAB);
+    tft.fillScreen(Display_Color);
+    tft.setCursor(0, 0);
+    tft.setTextColor(Text_Color);
+    tft.setTextSize(2);
+    int menuStuff = objects[2].menuNumber;
+    Serial.println(menuStuff);
+  }
+};
+
+// Instances --------------------------------------------------------------
+Menu objects[] = {
+  Menu(0, 0, 0, "Main Menu"),
+  Menu(1, 0, 1, "Enviro"),
+  Menu(2, 0, 2, "Measure"),
+  Menu(3, 1, 1, "Temp"),
+  Menu(4, 2, 1, "Ultrasonic"),
+};
+
 DelayTimer bugginShiz(250);
 DelayTimer buttonDelay(250);
+
+// Functions ---------------------------------------------------------------
 
 int buttonState() {
   int state = analogRead(btn_apin);
@@ -112,6 +151,7 @@ void openOption() {
     option2Menu();
   }
 }
+// Loops ------------------------------------------
 
 void debugStuff() {
   if (bugginShiz.Update() == true) {
@@ -134,6 +174,9 @@ void setup() {
 }
 
 void loop() {
+int numOfMenus = sizeof(objects) / sizeof(objects[0]); // Some funky voodoo going on here. ChatGPT gave this example to dynamically set the number of menus. It's working. 
+Serial.println(numOfMenus);  
+  
   if (buttonState() == 3) {
     selectedOption++;
   }
@@ -152,11 +195,16 @@ void loop() {
       selectedOption = defaultOption;
     }
   }
-  if (selectedOption > numOptions) {
-    selectedOption = defaultOption;
-  }
-  if (selectedOption < defaultOption) {
-    selectedOption = numOptions;
-  }
- // debugStuff();
+
+  // debugStuff();
 }
+
+
+
+
+/*  tft.println("- Option 1");
+    tft.println("- Option 2");
+    tft.println("- Option 3");
+    tft.println("- Option 4");
+    tft.drawRect(0, 15, 128, 10, ST7735_RED);
+    */
