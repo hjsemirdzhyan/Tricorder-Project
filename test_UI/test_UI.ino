@@ -22,7 +22,7 @@ const uint16_t Display_Color = ST7735_BLUE;
 const uint16_t Text_Color = ST7735_WHITE;
 
 
-// Classes -------------------------------------------------------------------------------------------------------
+// Classes ------------------------------------------------------------------------------------------------------------
 class DelayTimer {
   long delayTime;
   unsigned long previousPoll;
@@ -46,12 +46,12 @@ public:
 };
 
 class Menu {
-  String menuName = "";  // may be redundant if i have to use an array to name all the menus.
-  int menuNumber = 0;             // menu number
-  int belongsTo = 0;              // if it's a submenu, to which menu it belongs
-  int position = 0;               // if it's a submenu, where in the list of its parent menu does this menu appear
-  bool openState = false;         // true when open
-  int numOfItems = 0;             // number of other menus or funcitons inside this one
+  String menuName = "";    // may be redundant if i have to use an array to name all the menus.
+  int menuNumber = 0;      // menu number
+  int belongsTo = 0;       // if it's a submenu, to which menu it belongs
+  int position = 0;        // if it's a submenu, where in the list of its parent menu does this menu appear
+  bool openState = false;  // true when open
+  int numOfItems = 0;      // number of other menus or funcitons inside this one (is this even necessary anymore?)
 public:
   Menu(int num, int belongs, int order, String name) {
     menuNumber = num;
@@ -60,31 +60,40 @@ public:
     menuName = name;
   }
 
-  void draw(Menu* objects, int arraySize) { //Please note that the size of the object array (arraySize) is also passed to ensure you're accessing valid elements within the array bounds.
-    tft.initR(INITR_144GREENTAB);
+  void draw(Menu* objects, int arraySize) {  //the size of the object array (arraySize) is also passed to ensure you're accessing valid elements within the array bounds.
     tft.fillScreen(Display_Color);
     tft.setCursor(0, 0);
     tft.setTextColor(Text_Color);
     tft.setTextSize(2);
-    int menuStuff = objects[2].menuNumber;
-    Serial.println(menuStuff);
+    for (int i = 0; i < arraySize; i++) {
+      if (objects[i].menuNumber == menuNumber) {
+        tft.println(objects[i].menuName);
+        for (int j = 1; j < arraySize; j++) {  // starting at 1 in order to ignore parent menu from being displayed as a list item inside itself. 
+          tft.setTextSize(1);
+          if (objects[j].belongsTo == menuNumber) {
+            tft.println(objects[j].menuName);
+          }
+        }
+      }
+    }
   }
 };
 
-// Instances --------------------------------------------------------------
+// Initializations --------------------------------------------------------------
 Menu objects[] = {
   Menu(0, 0, 0, "Main Menu"),
   Menu(1, 0, 1, "Enviro"),
   Menu(2, 0, 2, "Measure"),
   Menu(3, 1, 1, "Temp"),
   Menu(4, 2, 1, "Ultrasonic"),
+  Menu(5, 1, 2, "CO2"),
 };
 
+int numOfMenus = sizeof(objects) / sizeof(objects[0]);  // Some funky voodoo math going on here. ChatGPT gave this example to dynamically set the number of menus. It's working.
+
 DelayTimer bugginShiz(250);
-DelayTimer buttonDelay(250);
 
-// Functions ---------------------------------------------------------------
-
+// Functions -----------------------------------------------------------------------------------------------
 int buttonState() {
   int state = analogRead(btn_apin);
   if (buttonDelay.Update() == true) {
@@ -151,7 +160,6 @@ void openOption() {
     option2Menu();
   }
 }
-// Loops ------------------------------------------
 
 void debugStuff() {
   if (bugginShiz.Update() == true) {
@@ -168,35 +176,19 @@ void debugStuff() {
   }
 }
 
+// Loops --------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  startupMenu();
+  tft.initR(INITR_144GREENTAB);
+  objects[0].draw(objects, numOfMenus);
+  delay(2000);
+  objects[1].draw(objects, numOfMenus);
+  delay(2000);
+  objects[2].draw(objects, numOfMenus);
 }
 
 void loop() {
-int numOfMenus = sizeof(objects) / sizeof(objects[0]); // Some funky voodoo going on here. ChatGPT gave this example to dynamically set the number of menus. It's working. 
-Serial.println(numOfMenus);  
-  
-  if (buttonState() == 3) {
-    selectedOption++;
-  }
-  if (buttonState() == 2) {
-    selectedOption--;
-  }
-  if (buttonState() == 4) {
-    openOption();
-    menuOpen = true;
-  }
-  if (buttonState() == 1) {
-    if (menuOpen == true) {
-      startupMenu();
-      menuOpen = false;
-    } else {
-      selectedOption = defaultOption;
-    }
-  }
 
-  // debugStuff();
 }
 
 
