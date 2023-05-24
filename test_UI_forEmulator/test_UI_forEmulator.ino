@@ -1,16 +1,19 @@
+//https://wokwi.com/projects/308024602434470466
+
+
 /*
-  tft.setTextSize(2) size is 15 pixels
-  tft.setTextSize(1) size is 8 pixels
+  Simple "Hello World" for ILI9341 LCD
 
-
+  https://wokwi.com/arduino/projects/308024602434470466
 */
 
-#include <Adafruit_ST7735.h>
-#include <Arduino.h>
+#include "SPI.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_ILI9341.h"
 
+#define TFT_DC 9
 #define TFT_CS 10
-#define TFT_DC 8
-#define TFT_RST -1
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 #define btn_apin A0
 #define RANGE 20
@@ -20,13 +23,11 @@
 #define SW4 515
 #define SW5 760
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
-
 int defaultOption = 1;
 int selectedOption = defaultOption;
-const uint16_t Display_Color = ST7735_BLUE;
-const uint16_t Text_Color = ST7735_WHITE;
-const uint16_t Sel_Color = ST7735_RED;
+const uint16_t Display_Color = ILI9341_BLUE;
+const uint16_t Text_Color = ILI9341_WHITE;
+const uint16_t Sel_Color = ILI9341_RED;
 
 
 // Classes ------------------------------------------------------------------------------------------------------------
@@ -173,7 +174,7 @@ int buttonState() { //should this be a class?
 // Loops ----------------------------------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  tft.initR(INITR_144GREENTAB);
+  tft.begin();
   objects[0].draw(objects, numOfMenus);
   //Menu of object[0], draw at position 1 which is at 15 pixels in the +y axis.
 
