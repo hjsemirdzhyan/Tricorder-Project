@@ -180,7 +180,6 @@ void setup() {
 }
 
 void loop() {
-  /*
   if (buttonState() == 3) {
     selectedOption++;
   }
@@ -206,5 +205,4 @@ void loop() {
     selectedOption = numOptions;
   }
   debugStuff();
-  */
 }
