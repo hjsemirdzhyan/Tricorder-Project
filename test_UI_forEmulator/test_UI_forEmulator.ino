@@ -29,10 +29,9 @@ int selectionInterval = 8;           // number of pixels between selection optio
 int startingMenu = 0;                // the menu (in terms of menu number) to load on startup
 int openMenu = startingMenu;         // stores the menu number of the currently open menu
 int numOfMenus = 0;
+bool debug = true; 
 
-// -----------------------------------------------------------------------------------------------------------
-// Classes ---------------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------------------
+h
 class DelayTimer {
   long delayTime;
   unsigned long previousPoll;
@@ -63,7 +62,7 @@ class Menu {
   int numOfItems = 0;                                        // number of other menus or funcitons inside this one (is this even necessary anymore?)
   int currentSelectionPosition = selectionStartingPosition;  // keeps track of which menu item is selected
   int endOfList = 0;                                         // y_position after the last item on a menu
-  int selectedItem = 1;                                      // numerical item currently selected
+  int selectedItem = 0;                                      // numerical item currently selected
   int numberOfListItems = 0;                                 // number of items on menu
 public:
   Menu(int menuNumber, int belongsTo, int position, String menuName) {
@@ -78,7 +77,7 @@ public:
     tft.setCursor(0, 0);
     tft.setTextColor(Text_Color);
     tft.setTextSize(2);
-    for (int i = 0; i < numOfMenus; i++) {
+    for (int i = 1; i < numOfMenus; i++) {
       if (objects[i].menuNumber == openMenu) {
         tft.println(objects[i].menuName);
         int count = 1;
@@ -89,10 +88,15 @@ public:
             count++;
           }
         }
-        numberOfListItems = count;
+        numberOfListItems = count; // not efficient. Every time draw is called, this is recalculated which isn't necessary if the menu just needs to be refreshed.
       }
     }
-    endOfList = tft.getCursorY();
+    endOfList = tft.getCursorY(); // might cause issues if list is empty. Or not. =/
+    
+    if (false == true) {
+      Serial.print("End of list is ");
+      Serial.println(tft.getCursorY());
+    }
   }
 
   int getNumberOfListItems(Menu* objects, int menuNum) {
@@ -133,16 +137,27 @@ public:
     for (int i = 1; i < numOfMenus; i++) {                          //  iterate over all menus
       if (objects[i].belongsTo == getAddress(objects, openMenu)) {  //  first filter for belongsTo of current menu
         if (objects[i].position == selectedItem) {                  //  Find where the position of the belongs to matches the position of the selected item.
+          
+          if (debug == true) {
+            Serial.print("Selected Menu Iterator is: ");
+            Serial.println(i);
+        }
           return objects[i].menuNumber;                             //  return that that items menu number
+        } else {
+          Serial.println("NO MATCHING SELECTION");
         }
       }
     }
   }
 
-  int getSelectedItem(Menu* objects) {  //  returns the position in terms of the list lenght of the open menu
+  int getSelectedItem(Menu* objects) {  //  returns the position in terms of the list length of the open menu
     int a = getSelectedMenu(objects);   //  finds menu number of selectedMenu
     int b = getAddress(objects, a);     //  find address of selectedMenu
     return objects[b].position;         //  returns position number of selectedMenu
+  }
+
+  void setSelectedItem(Menu* objects, int positionNumber) {
+    selectedItem = positionNumber;
   }
 
   int getAddress(Menu* objects, int menuNum) {  // this is only ever going to be used inside this method. Since you need to know the address already in order to call this method outside the class
@@ -155,23 +170,53 @@ public:
 
   void cursorToEndOfList() {
     tft.setCursor(0, endOfList);
+
+    if (false == true) {
+      Serial.print("cursorToEndOfList is ");
+      Serial.println(tft.getCursorY());
+    }
   }
 
   void goDown(Menu* objects) {
+    if (selectedItem > numberOfListItems) { // (1 > 6)
+      currentSelectionPosition = selectionStartingPosition;
+      selectedItem = 1;
+      if (debug == true) {
+        Serial.println("We're inside the selection reset loop");
+      }
+    }
+    currentSelectionPosition = currentSelectionPosition + (selectionInterval * (selectedItem - 1)); // x = 15 + (8 * (1 - 1)) = 15
     draw(objects);
-    currentSelectionPosition = currentSelectionPosition + selectionInterval;
     tft.drawRect(0, currentSelectionPosition, 128, 10, Sel_Color);
-    selectedItem++;
-    Serial.print("selected item is ");
-    Serial.println(selectedItem);
+
+    if (debug == true) {
+      Serial.print("selected item is ");
+      Serial.println(selectedItem); // **7**
+      Serial.print("Current selection position is: ");
+      Serial.println(currentSelectionPosition);
+    }
   }
 
   void select(Menu* objects) { // sets the new open menu based on the selectedMenu
     int a = getSelectedMenu(objects); //  gets the menu number of the selectedMenu
     int b = getAddress(objects, a);
     openMenu = objects[b].menuNumber;
-    draw(objects);
+    selectedItem = 1; //  so it goes to the top of the list for the new menu being opened
+    currentSelectionPosition = selectionStartingPosition;
+    //draw(objects);
+
+    if (false == true) {
+      Serial.print("Selected menu: ");
+      Serial.println(a);
+      Serial.print("Address of menu: ");
+      Serial.println(b);
+      Serial.print("Open menu: ");
+      Serial.println(openMenu);
+    }
   }
+
+
+
 };
 
 // -----------------------------------------------------------------------------------------------------------
@@ -210,6 +255,7 @@ void debugStuff() {
     int e = objects[y].getSelectedItem(objects);             // gets position of selected item
 
     objects[y].cursorToEndOfList();
+    tft.setCursor(0, selectionStartingPosition);
 
     tft.print("This is menu number ");
     tft.print(x);
@@ -260,6 +306,14 @@ int menuToAddress(Menu* objects, int menuNum) {  // this function is needed in o
   }
 }
 
+int selectionToCursor(Menu* objects, int somePosition) {
+  for (int i = 0; i < numOfMenus; i++) {
+    if (objects[i].getSelectedItem(objects) == somePosition) {
+      
+    }
+  }
+}
+
 void testingActions() {  // temporary until I get my buttons to work.
   int a = menuToAddress(objects, openMenu); //  address of open menu
   int length = objects[a].getNumberOfListItems(objects, openMenu);
@@ -267,15 +321,18 @@ void testingActions() {  // temporary until I get my buttons to work.
     objects[a].goDown(objects);
     delay(250);
   }
-  Serial.println("We're done moving");
+  if (false == true) {
+    Serial.println("We're done moving");
+  }
   delay(1000);
-  objects[a].select(objects); //
+  objects[a].select(objects);
 }
 
 void startUp() {
   tft.begin();
   objects[startingMenu].draw(objects);                             // Edit "startingMenu" to change which menu appears on screen
   tft.drawRect(0, selectionStartingPosition, 128, 10, Sel_Color);  // Draws selection rectangle on startingPosition of the screen
+  objects[startingMenu].setSelectedItem(objects, 1);
 }
 
 // -----------------------------------------------------------------------------------------------------------
@@ -286,7 +343,7 @@ void setup() {
   Serial.begin(9600);
   startUp();
   testingActions();  // For now, will be simulating button presses via hard coded functions
-  debugStuff();
+  //debugStuff();
 }
 
 void loop() {
