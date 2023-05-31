@@ -6,7 +6,9 @@
   In this refactor of the UI code, I'm getting rid of the hard coded menu numbers and positions. 
   The menu numbers will be calculated on the fly depending on the number of menus and where in the array they're added.
   Similarily, I'll rely on where in the array a menu is added to determine its order on its parent menus page.
-  I think this will GREATLY simplify the code.  
+  I think this will GREATLY simplify the code.
+
+  Would I rather calculate the list of submenus for each menu on the fly or do it once and store it in memory? 
 */
 
 #include "SPI.h"
@@ -44,8 +46,10 @@ class Menu {
   String _menuName = "";
   int _menuNum = 0;
   String _childOf = "";
-  int _numOfSubMenus = 0;
+  int _numOfChildren = 0;                          //  wont need anymore if array is storing children of parent menu
   static Menu* obj;
+  int* _childrenArray;                             // Array of children menu numbers
+
 public:
   Menu(String _menuName, String _childOf) {
     this->_menuName = _menuName;
@@ -64,36 +68,70 @@ public:
       Serial.print(tft.getCursorX());
       Serial.println(tft.getCursorY());
     }
-    drawSubMenus();
+    drawChildren();
   }
 
-  void drawSubMenus() {
-    _numOfSubMenus = calcNumOfSubMenus();
-    tft.setTextSize(1);
-    for (int i = 1; i < numOfMenus; i++) {
-      if (obj[i]._childOf == _menuName) {
-        tft.println(obj[i]._menuName);
-        if (debug == true) {
-          Serial.println("Function, drawSubMenus");
-          Serial.print("    Submenu ");
-          Serial.print(i);
-          Serial.print(" cursor x and y are ");
-          Serial.print(tft.getCursorX());
-          Serial.println(tft.getCursorY());
+  void generateChildren() {
+    calcNumOfChildren();                            //  generate value for number of children
+    int a = _numOfChildren;
+    _childrenArray = new int[a];                    //  initialize empty array of child list length
+    int index = 0;                                  //  stores where the next child menu number will be stored in the index
+    for (int i = 0; i < numOfMenus; i++) {          //  check all menus
+      if (obj[i]._childOf == _menuName) {           //  if a menus childOf equals current menus name
+        _childrenArray[index] = i;                  //  no menu other than zero has been accessed or generated yet so menuNum is zero for all
+        index++;
+        }
+      }
+    if (true == true) {
+      Serial.println("Function, generateChildren");
+      Serial.print("    Children of ");
+      Serial.print(_menuName);
+      Serial.print("{");
+      for (int i = 0; i < a; i++) {
+        Serial.print(_childrenArray[i]);
+        if (i < a - 1) {
+        Serial.print(", ");
+        } else if (i == a - 1) {
+          Serial.println("}");
         }
       }
     }
   }
 
-  int calcNumOfSubMenus() {
-    int numOfSubMenus = 0;
+  void drawChildren() {
+    if (_childrenArray == nullptr) {
+      generateChildren();                         // Generate children array only if it hasn't been populated yet
+    }
+    int a = _numOfChildren;
+    String b = "";
+    tft.setTextSize(1);
+    if (true == true) {
+      Serial.println("Function, drawChildren");
+    }
+      for (int i = 0; i < a; i++) {
+        b = obj[_childrenArray[i]]._menuName;
+        tft.println(b);
+        if (true == true) {
+          Serial.print("    Child menu ");
+          Serial.print(_childrenArray[i]);
+          Serial.print(" at position ");
+          Serial.print(i);
+          Serial.print(" cursor x,y: ");
+          Serial.print(tft.getCursorX());
+          Serial.println(tft.getCursorY());
+        }
+    }
+  }
+
+  void calcNumOfChildren() {
+    int numOfChildren = 0;
     for (int i = 0; i < numOfMenus; i++) {
       if (obj[i]._childOf == _menuName) {
-        numOfSubMenus++;
+        numOfChildren++;
         if (debug == true) {
-          Serial.println("calcNumOfSubMenus Function");
-          Serial.print("    Number of submenus ");
-          Serial.println(numOfSubMenus);
+          Serial.println("Function, calcNumOfChildren");
+          Serial.print("    Number of children ");
+          Serial.println(numOfChildren);
           Serial.print("    Menu # ");
           Serial.print(i);
           Serial.print(" ");
@@ -103,11 +141,14 @@ public:
         }
       }
     }
-    return numOfSubMenus;
+    _numOfChildren = numOfChildren;
   }
 
   String getMenuName() {
     return _menuName;
+  }
+  int getMenuNum() {                              //  cant really use cuz menu num only generates once menu is accessed
+    return _menuNum;
   }
 
   String getChildOf() {
@@ -120,8 +161,25 @@ public:
 };
 
 class Navigation {
-  int sel_y;                                            //  y position of selected submenu
+  int sel_yPos;                                         //  y position of selected submenu
   int sel_menuNum;                                      //  menu number of seleted submenu
+public:
+  Navigation() {                                        //  I need a Navigation class in order to store the navigation state of all the menus
+
+  }
+
+  void goDown() {
+    //  first, needs to check if selection is outside the length of the menu items
+    //      if it is, start from first item on list then continue
+    //      else contine
+    //  second, find list of menu numbers belonging to current menu
+    //      iterate the sel_yPos and sel_menuNum
+    //      or if there are no items on the list, do nothing
+  }
+
+  void select() {
+
+  }
 };
 
 // -----------------------------------------------------------------------------------------------------------
@@ -148,11 +206,11 @@ Menu obj[] = {
 // -----------------------------------------------------------------------------------------------------------
 void startup() {
   tft.begin();
-  obj[0].draw();
-  testing();
+  //obj[0].draw();
 }
 
 void testing() {
+  obj[1].generateChildren();
 }
 
 // -----------------------------------------------------------------------------------------------------------
@@ -163,6 +221,7 @@ void setup() {
   Menu::setObj(obj);
   Serial.begin(9600);
   startup();
+  testing();
 }
 
 void loop() {
