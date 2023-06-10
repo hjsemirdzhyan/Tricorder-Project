@@ -1,14 +1,16 @@
-/* 
+/*
   Emulator can be found at: https://wokwi.com/projects/308024602434470466
   C++ tutorial/examples: https://www.w3schools.com/cpp/cpp_oop.asp
 
 
-  In this refactor of the UI code, I'm getting rid of the hard coded menu numbers and positions. 
+  In this refactor of the UI code, I'm getting rid of the hard coded menu numbers and positions.
   The menu numbers will be calculated on the fly depending on the number of menus and where in the array they're added.
   Similarily, I'll rely on where in the array a menu is added to determine its order on its parent menus page.
   I think this will GREATLY simplify the code.
 
-  Would I rather calculate the list of submenus for each menu on the fly or do it once and store it in memory? 
+  Would I rather calculate the list of submenus for each menu on the fly or do it once and store it in memory?
+  Arduino Uno Flash Memory: 32 KB = 32,768 bytes. Array memory is 4 bytes per element.
+
 */
 
 #include "SPI.h"
@@ -32,9 +34,8 @@ const uint16_t Display_Color = ILI9341_BLUE;
 const uint16_t Text_Color = ILI9341_WHITE;
 const uint16_t Sel_Color = ILI9341_RED;
 
-bool debug = false;
-int numOfMenus = 0;
-int openMenu = 0;
+bool debug = true;
+int numOfMenus = 0; // should move into menu class as a static int
 
 int y_Cursor1 = 8;
 int y_Cursor2 = 15;
@@ -42,94 +43,124 @@ int y_Cursor2 = 15;
 // -----------------------------------------------------------------------------------------------------------
 // Classes ---------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
+
 class Menu {
   String _menuName = "";
-  int _menuNum = 0;
   String _childOf = "";
-  int _numOfChildren = 0;                          //  wont need anymore if array is storing children of parent menu
+  int _numOfChildren = 0;  //  wont need anymore if array is storing children of parent menu...maybe
+  int* _childrenArray;     //  array of children menu numbers
   static Menu* obj;
-  int* _childrenArray;                             // Array of children menu numbers
+  static int _openMenu;    //  variable that stores currently open menu number
+  int _sel_yPos = 15;      //  y position of selected submenu
+  int _sel_menuItem = 0;   //  number in child list of where selector is
+  int _sel_menuNum = 0;    //  menu number of seleted submenu
 
 public:
-  Menu(String _menuName, String _childOf) {
-    this->_menuName = _menuName;
-    this->_childOf = _childOf;
+  Menu(String menuName, String childOf) {
+    this->_menuName = menuName;
+    this->_childOf = childOf;
   }
 
-  void draw() {
+  void Draw() {
+    SetOpenMenu(_menuName);                       //  _openMenu should be set any time a menu is drawn. In case other parts of code foregts to set it from a user interaction.
     tft.fillScreen(Display_Color);
     tft.setCursor(0, 0);
     tft.setTextColor(Text_Color);
     tft.setTextSize(2);
     tft.println(_menuName);
     if (debug == true) {
-      Serial.println("Function, Draw");
-      Serial.print("    Heading cursor x and y are ");
+      Serial.print("Method, Draw: ");
+      Serial.println(_menuName);
+      Serial.print("    Heading cursor x,y are ");
       Serial.print(tft.getCursorX());
       Serial.println(tft.getCursorY());
     }
-    drawChildren();
+    DrawChildren();
   }
 
-  void generateChildren() {
-    calcNumOfChildren();                            //  generate value for number of children
-    int a = _numOfChildren;
-    _childrenArray = new int[a];                    //  initialize empty array of child list length
-    int index = 0;                                  //  stores where the next child menu number will be stored in the index
-    for (int i = 0; i < numOfMenus; i++) {          //  check all menus
-      if (obj[i]._childOf == _menuName) {           //  if a menus childOf equals current menus name
-        _childrenArray[index] = i;                  //  no menu other than zero has been accessed or generated yet so menuNum is zero for all
-        index++;
-        }
-      }
-    if (true == true) {
-      Serial.println("Function, generateChildren");
-      Serial.print("    Children of ");
-      Serial.print(_menuName);
-      Serial.print("{");
-      for (int i = 0; i < a; i++) {
-        Serial.print(_childrenArray[i]);
-        if (i < a - 1) {
-        Serial.print(", ");
-        } else if (i == a - 1) {
-          Serial.println("}");
-        }
-      }
-    }
-  }
-
-  void drawChildren() {
+  void DrawChildren() {
     if (_childrenArray == nullptr) {
-      generateChildren();                         // Generate children array only if it hasn't been populated yet
+      GenerateChildren();                             //  Generate children array only if it hasn't been populated yet (in order to save processing time)
+    } else {
+      Serial.println("Skipped, GenerateChildren");
+      Serial.println("    _childrenArray is already populated");
     }
     int a = _numOfChildren;
     String b = "";
     tft.setTextSize(1);
-    if (true == true) {
-      Serial.println("Function, drawChildren");
+    if (debug == true) {
+      Serial.println("Method, DrawChildren");
     }
+    if (a < 1) {
+      Serial.println("    No Children");
+    } else {
       for (int i = 0; i < a; i++) {
-        b = obj[_childrenArray[i]]._menuName;
-        tft.println(b);
-        if (true == true) {
+        b = obj[_childrenArray[i]]._menuName;  //  menu name of child menus
+        if (i == _sel_menuItem) {
+          tft.setTextColor(Sel_Color);
+          tft.println(b);
+        } else {
+          tft.setTextColor(Text_Color);
+          tft.println(b);
+        }
+        if (debug == true) {
           Serial.print("    Child menu ");
           Serial.print(_childrenArray[i]);
+          Serial.print(" ");
+          Serial.print(b);
           Serial.print(" at position ");
           Serial.print(i);
           Serial.print(" cursor x,y: ");
           Serial.print(tft.getCursorX());
           Serial.println(tft.getCursorY());
         }
+      }
     }
   }
 
-  void calcNumOfChildren() {
+  void GenerateChildren() {
+    CalcNumOfChildren();  //  generate value for number of children
+    int a = _numOfChildren;
+    _childrenArray = new int[a];              //  initialize empty array of child list length
+    if (a > 0) {                              //  only scan thru matching menus if menu has at least one child
+      int index = 0;                          //  stores where the next child menu number will be stored in the index
+      for (int i = 0; i < numOfMenus; i++) {  //  check all menus
+        if (obj[i]._childOf == _menuName) {   //  if a menus childOf equals current menus name
+          _childrenArray[index] = i;          //  no menu other than zero has been accessed or generated yet so menuNum is zero for all
+          index++;
+        }
+      }
+    }
+
+    if (debug == true) {
+      Serial.println("Method, GenerateChildren");
+      Serial.print("    Children of ");
+      Serial.print(_menuName);
+      Serial.print("{");
+      if (a < 1) {
+        Serial.println(" }");
+      } else {
+        for (int i = 0; i < a; i++) {
+          Serial.print(_childrenArray[i]);
+          if (i < a - 1) {
+            Serial.print(", ");
+          } else {
+            Serial.println("}");
+          }
+        }
+      }
+    }
+  }
+
+  void CalcNumOfChildren() {
     int numOfChildren = 0;
+    if (debug == true) {
+      Serial.println("Method, CalcNumOfChildren");
+    }
     for (int i = 0; i < numOfMenus; i++) {
       if (obj[i]._childOf == _menuName) {
         numOfChildren++;
         if (debug == true) {
-          Serial.println("Function, calcNumOfChildren");
           Serial.print("    Number of children ");
           Serial.println(numOfChildren);
           Serial.print("    Menu # ");
@@ -142,43 +173,52 @@ public:
       }
     }
     _numOfChildren = numOfChildren;
+    if (debug == true) {
+      Serial.print("    _numOfChildren = ");
+      Serial.println(_numOfChildren);
+    }
   }
 
-  String getMenuName() {
+  String GetMenuName() {
     return _menuName;
   }
-  int getMenuNum() {                              //  cant really use cuz menu num only generates once menu is accessed
-    return _menuNum;
-  }
 
-  String getChildOf() {
+  String GetChildOf() {
     return _childOf;
   }
 
-  static void setObj(Menu* _obj) {
+  static int GetOpenMenu() {
+    if (debug == true) {
+      Serial.println("Method, GetOpenMenu");
+      Serial.print("    Open menu #: ");
+      Serial.println(_openMenu);
+    }
+    return _openMenu;
+  }
+
+  static void SetOpenMenu(String menuName) {                 //  sets array index number (menuNumber) of menu given the menus name of menu that's meant to be open. 
+    for (int i = 0; i < numOfMenus; i++) {                   //  need to convert a menu name to it's array index value
+      if (obj[i]._menuName == menuName) {
+        _openMenu = i;
+      }
+    }
+    if (debug == true) {
+      Serial.println("Method, SetOpenMenu");
+      Serial.print("    Open menu #: ");
+      Serial.println(_openMenu);
+    }
+  }
+
+  static void SetObj(Menu* _obj) {
     obj = _obj;
   }
-};
 
-class Navigation {
-  int sel_yPos;                                         //  y position of selected submenu
-  int sel_menuNum;                                      //  menu number of seleted submenu
-public:
-  Navigation() {                                        //  I need a Navigation class in order to store the navigation state of all the menus
-
+  void SetSelMenuItem(int menuItem) {
+    _sel_menuItem = menuItem;
   }
 
-  void goDown() {
-    //  first, needs to check if selection is outside the length of the menu items
-    //      if it is, start from first item on list then continue
-    //      else contine
-    //  second, find list of menu numbers belonging to current menu
-    //      iterate the sel_yPos and sel_menuNum
-    //      or if there are no items on the list, do nothing
-  }
-
-  void select() {
-
+  void SetSelMenuNum(int menuNum) {
+    _sel_menuNum = menuNum;
   }
 };
 
@@ -201,16 +241,21 @@ Menu obj[] = {
   Menu("Blutooth", "SubGhz"),
 };
 
+int Menu::_openMenu = 0;
+
 // -----------------------------------------------------------------------------------------------------------
 // Functions -------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
 void startup() {
   tft.begin();
-  //obj[0].draw();
+  obj[0].Draw();
+  Menu::GetOpenMenu();
 }
 
 void testing() {
-  obj[1].generateChildren();
+  delay(2000);
+  obj[1].Draw();
+  Menu::GetOpenMenu();
 }
 
 // -----------------------------------------------------------------------------------------------------------
@@ -218,7 +263,7 @@ void testing() {
 // -----------------------------------------------------------------------------------------------------------
 void setup() {
   numOfMenus = sizeof(obj) / sizeof(obj[0]);
-  Menu::setObj(obj);
+  Menu::SetObj(obj);
   Serial.begin(9600);
   startup();
   testing();

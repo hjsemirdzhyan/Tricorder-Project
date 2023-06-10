@@ -2,5 +2,5 @@
     "board": "arduino:avr:uno",
     "programmer": "avrisp",
     "port": "/dev/tty.usbmodem1101",
-    "sketch": "ready_tempHumidity/ready_tempHumidity.ino"
+    "sketch": "test_UI_Refactor/test_UI_Refactor.ino"
 }
