@@ -23,7 +23,7 @@
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 #define btn_apin A0
-#define RANGE 20
+#define RANGE 10
 #define SW1 RANGE
 #define SW2 155
 #define SW3 340
@@ -35,7 +35,7 @@ const uint16_t Text_Color = ILI9341_WHITE;
 const uint16_t Sel_Color = ILI9341_RED;
 
 bool debug = true;
-int numOfMenus = 0; // should move into menu class as a static int
+int numOfMenus = 0;  // should move into menu class as a static int
 
 int y_Cursor1 = 8;
 int y_Cursor2 = 15;
@@ -50,10 +50,10 @@ class Menu {
   int _numOfChildren = 0;  //  wont need anymore if array is storing children of parent menu...maybe
   int* _childrenArray;     //  array of children menu numbers
   static Menu* obj;
-  static int _openMenu;    //  variable that stores currently open menu number
-  int _sel_yPos = 15;      //  y position of selected submenu
-  int _sel_menuItem = 0;   //  number in child list of where selector is
-  int _sel_menuNum = 0;    //  menu number of seleted submenu
+  static int _openMenu;      //  variable that stores currently open menu number
+  int _sel_yPos = 15;        //  y position of selected submenu
+  static int _sel_menuItem;  //  number in child list of where selector is
+  static int _sel_menuNum;   //  menu number of seleted submenu
 
 public:
   Menu(String menuName, String childOf) {
@@ -62,7 +62,7 @@ public:
   }
 
   void Draw() {
-    SetOpenMenu(_menuName);                       //  _openMenu should be set any time a menu is drawn. In case other parts of code foregts to set it from a user interaction.
+    SetOpenMenu(_menuName);  //  _openMenu should be set any time a menu is drawn. In case other parts of code foregts to set it from a user interaction.
     tft.fillScreen(Display_Color);
     tft.setCursor(0, 0);
     tft.setTextColor(Text_Color);
@@ -80,7 +80,7 @@ public:
 
   void DrawChildren() {
     if (_childrenArray == nullptr) {
-      GenerateChildren();                             //  Generate children array only if it hasn't been populated yet (in order to save processing time)
+      GenerateChildren();  //  Generate children array only if it hasn't been populated yet (in order to save processing time)
     } else {
       Serial.println("Skipped, GenerateChildren");
       Serial.println("    _childrenArray is already populated");
@@ -196,8 +196,8 @@ public:
     return _openMenu;
   }
 
-  static void SetOpenMenu(String menuName) {                 //  sets array index number (menuNumber) of menu given the menus name of menu that's meant to be open. 
-    for (int i = 0; i < numOfMenus; i++) {                   //  need to convert a menu name to it's array index value
+  static void SetOpenMenu(String menuName) {  //  sets array index number (menuNumber) of menu given the menus name of menu that's meant to be open.
+    for (int i = 0; i < numOfMenus; i++) {    //  need to convert a menu name to it's array index value
       if (obj[i]._menuName == menuName) {
         _openMenu = i;
       }
@@ -213,15 +213,39 @@ public:
     obj = _obj;
   }
 
-  void SetSelMenuItem(int menuItem) {
+  static void SetSelMenuItem(int menuItem) {
     _sel_menuItem = menuItem;
   }
 
-  void SetSelMenuNum(int menuNum) {
+  static void SetSelMenuNum(int menuNum) {
     _sel_menuNum = menuNum;
+  }
+
+  static int GetSelMenuItem() {
+    return _sel_menuItem;
+  }
+
+  static int GetSelMenuNum() {
+    return _sel_menuNum;
+  }
+
+  int GetNumOfChildren() {
+    return _numOfChildren;
   }
 };
 
+class Nav {
+public:
+  void GoDown(Menu& menuObj) {  // the specific instance(object) of menu is being passed in as a parameter. Ex obj[openMenu] is the intended parameter
+    int a = Menu::GetSelMenuItem();
+    int b = a + 1;
+    int c = menuObj.GetNumOfChildren();  //  get the number of children menus of the open menu
+    if (b > a) {                         //  if we try to navigate passed the last child menu, reset to the top
+      b = 0;
+    }
+    Menu::SetSelMenuItem(b);  //  calls the setter of the selected menu item variable
+  }
+};
 // -----------------------------------------------------------------------------------------------------------
 // Initializations -------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
@@ -241,7 +265,11 @@ Menu obj[] = {
   Menu("Blutooth", "SubGhz"),
 };
 
+Nav menuInterface;
+
 int Menu::_openMenu = 0;
+int Menu::_sel_menuItem = 0;
+int Menu::_sel_menuNum = 0;
 
 // -----------------------------------------------------------------------------------------------------------
 // Functions -------------------------------------------------------------------------------------------------
@@ -249,13 +277,16 @@ int Menu::_openMenu = 0;
 void startup() {
   tft.begin();
   obj[0].Draw();
-  Menu::GetOpenMenu();
 }
 
 void testing() {
   delay(2000);
   obj[1].Draw();
-  Menu::GetOpenMenu();
+  delay(2000);
+  menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
+  delay(2000);
+  menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
+  obj[1].Draw();
 }
 
 // -----------------------------------------------------------------------------------------------------------
