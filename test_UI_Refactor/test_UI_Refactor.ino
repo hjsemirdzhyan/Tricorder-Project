@@ -236,14 +236,29 @@ public:
 
 class Nav {
 public:
+
   void GoDown(Menu& menuObj) {  // the specific instance(object) of menu is being passed in as a parameter. Ex obj[openMenu] is the intended parameter
     int a = Menu::GetSelMenuItem();
     int b = a + 1;
     int c = menuObj.GetNumOfChildren();  //  get the number of children menus of the open menu
-    if (b > a) {                         //  if we try to navigate passed the last child menu, reset to the top
+    if (b > c) {                         //  if we try to navigate passed the last child menu, reset to the top
       b = 0;
     }
     Menu::SetSelMenuItem(b);  //  calls the setter of the selected menu item variable
+
+    if (debug == true) {
+      Serial.println("Method, GoDown");
+      Serial.print("    Retrieved selected menu item # is (starts from zero): ");
+      Serial.println(a);
+      Serial.print("    Next menu item # should be: ");
+      Serial.println(b);
+      Serial.print("    Retrieved number of children is (doesnt start from zero): ");
+      Serial.println(c);
+    }
+  }
+
+  void OpenSelected(Menu& menuObj) {
+    
   }
 };
 // -----------------------------------------------------------------------------------------------------------
@@ -284,9 +299,12 @@ void testing() {
   obj[1].Draw();
   delay(2000);
   menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
+  obj[1].Draw();
   delay(2000);
   menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
   obj[1].Draw();
+  delay(2000);
+  obj[Menu::GetOpenMenu()].Draw(); // needs to be GetSelMenuNum via GetSelMenuItem
 }
 
 // -----------------------------------------------------------------------------------------------------------
