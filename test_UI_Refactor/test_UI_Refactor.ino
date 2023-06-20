@@ -47,13 +47,14 @@ int y_Cursor2 = 15;
 class Menu {
   String _menuName = "";
   String _childOf = "";
-  int _numOfChildren = 0;  //  wont need anymore if array is storing children of parent menu...maybe
-  int* _childrenArray;     //  array of children menu numbers
+  int _numOfChildren = 0;        //  wont need anymore if array is storing children of parent menu...maybe
+  int* _childrenArray;           //  array of addresses to children menu numbers
+  static int* childrenArray;     //  same as _childrenArray except it's only used in static members so as to avoid having to pass along _childrenArray as a parameter for every damn function related to the menu number assignment process
   static Menu* obj;
-  static int _openMenu;      //  variable that stores currently open menu number
-  int _sel_yPos = 15;        //  y position of selected submenu
-  static int _sel_menuItem;  //  number in child list of where selector is
-  static int _sel_menuNum;   //  menu number of seleted submenu
+  static int _openMenu;          //  variable that stores currently open menu number
+  int _sel_yPos = 15;            //  y position of selected submenu
+  static int _sel_menuItem;      //  number in child list of where selector is
+  static int _sel_menuNum;       //  menu number of seleted submenu
 
 public:
   Menu(String menuName, String childOf) {
@@ -119,7 +120,7 @@ public:
   }
 
   void GenerateChildren() {
-    CalcNumOfChildren();  //  generate value for number of children
+    CalcNumOfChildren();                      //  generate value for numOfChildren var
     int a = _numOfChildren;
     _childrenArray = new int[a];              //  initialize empty array of child list length
     if (a > 0) {                              //  only scan thru matching menus if menu has at least one child
@@ -213,24 +214,35 @@ public:
     obj = _obj;
   }
 
-  static void SetSelMenuItem(int menuItem) {
+  static void SetSelMenuItem(int menuItem) {  // convert to act for both menuitem and menunum. no need to have diff setters if they both will always happen at the same time.
     _sel_menuItem = menuItem;
+    SetSelMenuNum(_sel_menuItem);
   }
 
-  static void SetSelMenuNum(int menuNum) {
-    _sel_menuNum = menuNum;
+  static void SetSelMenuNum(int menuNum) { //   takes in the menuItem and sets menuNumber
+    int a = childrenArray[menuNum];
+    _sel_menuNum = a;
+      if (debug == true) {
+      Serial.println("Method, SetSelMenuNum");
+      Serial.print("    Selected menu #: ");
+      Serial.println(a);
+    }
   }
 
   static int GetSelMenuItem() {
     return _sel_menuItem;
   }
 
-  static int GetSelMenuNum() {
+  static int GetSelMenuNum() {  // Needs converting to get the num
     return _sel_menuNum;
   }
 
   int GetNumOfChildren() {
     return _numOfChildren;
+  }
+
+  static void SetChildrenArray(int* _childrenArray) {
+    childrenArray = _childrenArray;
   }
 };
 
@@ -258,13 +270,15 @@ public:
   }
 
   void OpenSelected(Menu& menuObj) {
-    
+    int a = Menu::GetSelMenuItem();
+    int b = Menu::GetSelMenuNum();
   }
 };
 // -----------------------------------------------------------------------------------------------------------
 // Initializations -------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
-Menu* Menu::obj = nullptr;  // Initialize the static member variable
+Menu* Menu::obj = nullptr;          //  initialize the static member variable
+int* Menu::childrenArray = nullptr; //  initializes the childrenArray array
 
 Menu obj[] = {
   Menu("Main Menu", "None"),
@@ -304,7 +318,7 @@ void testing() {
   menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
   obj[1].Draw();
   delay(2000);
-  obj[Menu::GetOpenMenu()].Draw(); // needs to be GetSelMenuNum via GetSelMenuItem
+  //obj[Menu::GetOpenMenu()].Draw();  // needs to be GetSelMenuNum via GetSelMenuItem
 }
 
 // -----------------------------------------------------------------------------------------------------------
