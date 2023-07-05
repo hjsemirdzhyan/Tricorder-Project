@@ -47,14 +47,14 @@ int y_Cursor2 = 15;
 class Menu {
   String _menuName = "";
   String _childOf = "";
-  int _numOfChildren = 0;        //  wont need anymore if array is storing children of parent menu...maybe
-  int* _childrenArray;           //  array of addresses to children menu numbers
-  static int* childrenArray;     //  same as _childrenArray except it's only used in static members so as to avoid having to pass along _childrenArray as a parameter for every damn function related to the menu number assignment process
+  int _numOfChildren = 0;     //  wont need anymore if array is storing children of parent menu...maybe
+  int* _childrenArray;        //  array of addresses to children menu numbers
+  static int* childrenArray;  //  same as _childrenArray except it's only used in static members so as to avoid having to pass along _childrenArray as a parameter for every damn function related to the menu number assignment process
   static Menu* obj;
-  static int _openMenu;          //  variable that stores currently open menu number
-  int _sel_yPos = 15;            //  y position of selected submenu
-  static int _sel_menuItem;      //  number in child list of where selector is
-  static int _sel_menuNum;       //  menu number of seleted submenu
+  static int _openMenu;      //  variable that stores currently open menu number
+  int _sel_yPos = 15;        //  y position of selected submenu
+  static int _sel_menuItem;  //  number in child list of where selector is
+  static int _sel_menuNum;   //  menu number of seleted submenu
 
 public:
   Menu(String menuName, String childOf) {
@@ -120,15 +120,15 @@ public:
   }
 
   void GenerateChildren() {
-    CalcNumOfChildren();                      //  generate value for numOfChildren var
+    CalcNumOfChildren();  //  generate value for numOfChildren var
     int a = _numOfChildren;
-    _childrenArray = new int[a];              //  initialize empty array of child list length
+    _childrenArray = new int[a];              //  initialize empty array of child list length. Not sure what this does, not really.
     if (a > 0) {                              //  only scan thru matching menus if menu has at least one child
       int index = 0;                          //  stores where the next child menu number will be stored in the index
       for (int i = 0; i < numOfMenus; i++) {  //  check all menus
         if (obj[i]._childOf == _menuName) {   //  if a menus childOf equals current menus name
           _childrenArray[index] = i;          //  no menu other than zero has been accessed or generated yet so menuNum is zero for all
-          index++;
+          index++;                            //  only changes the number if the current if-statement is entered. Used for keeping track of iterations.
         }
       }
     }
@@ -214,18 +214,23 @@ public:
     obj = _obj;
   }
 
-  static void SetSelMenuItem(int menuItem) {  // convert to act for both menuitem and menunum. no need to have diff setters if they both will always happen at the same time.
+  static void SetSelMenuItem(int menuItem) {  //  convert to act for both menuitem and menunum. no need to have diff setters if they both will always happen at the same time.
     _sel_menuItem = menuItem;
-    SetSelMenuNum(_sel_menuItem);
+    if (debug == true) {
+      Serial.println("Method, SetSelMenuItem");
+      Serial.print("    Selected menu item #: ");
+      Serial.println(_sel_menuItem);
+    }
+    SetSelMenuNum(_sel_menuItem);             //  move to nav class under open method, eventaully. So this isn't called until actually needed. 
   }
 
-  static void SetSelMenuNum(int menuNum) { //   takes in the menuItem and sets menuNumber
+  static void SetSelMenuNum(int menuNum) {    //  takes in the menuItem and sets menuNumber
     int a = childrenArray[menuNum];
     _sel_menuNum = a;
-      if (debug == true) {
+    if (debug == true) {
       Serial.println("Method, SetSelMenuNum");
       Serial.print("    Selected menu #: ");
-      Serial.println(a);
+      Serial.println(_sel_menuNum);
     }
   }
 
@@ -242,13 +247,43 @@ public:
   }
 
   static void SetChildrenArray(int* _childrenArray) {
-    childrenArray = _childrenArray;
+    int a = obj[GetOpenMenu()].GetNumOfChildren(); //   will need to change the zero to a variable.
+    childrenArray = new int[a];
+    if (a > 0) {
+      for (int i = 0; i < a; i++) {
+        childrenArray[i] = _childrenArray[i];
+      }
+    }
+
+    if (debug == true) {
+      Serial.println("Method, SetChildrenArray");
+      Serial.print("    var a returns: ");
+      Serial.println(a);
+      Serial.print("    childrenArray returns: ");
+      for (int i = 0; i < a; i++) {
+        Serial.print(childrenArray[i]);
+        Serial.print(" ");
+      }
+      Serial.println();
+    }
+  }
+
+  int* GetChildrenArray() {
+    if (debug == true) {
+      Serial.println("Method, GetChildrenArray");
+      Serial.print("    Returned: ");
+      for (int i = 0; i < _numOfChildren; i++) {
+        Serial.print(_childrenArray[i]);
+        Serial.print(" ");
+      }
+      Serial.println(" ");
+    }
+    return _childrenArray;
   }
 };
 
 class Nav {
 public:
-
   void GoDown(Menu& menuObj) {  // the specific instance(object) of menu is being passed in as a parameter. Ex obj[openMenu] is the intended parameter
     int a = Menu::GetSelMenuItem();
     int b = a + 1;
@@ -269,16 +304,16 @@ public:
     }
   }
 
-  void OpenSelected(Menu& menuObj) {
-    int a = Menu::GetSelMenuItem();
-    int b = Menu::GetSelMenuNum();
+  void OpenSelected(Menu& menuObj) { //   you pass the instance of the menu object in using the parameter. That's how it knows what instance to use.
+  // maybe this method isn't necessary
+    menuObj.Draw();
   }
 };
 // -----------------------------------------------------------------------------------------------------------
 // Initializations -------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
-Menu* Menu::obj = nullptr;          //  initialize the static member variable
-int* Menu::childrenArray = nullptr; //  initializes the childrenArray array
+Menu* Menu::obj = nullptr;           //  initialize the static member variable
+int* Menu::childrenArray = nullptr;  //  initializes the childrenArray array
 
 Menu obj[] = {
   Menu("Main Menu", "None"),
@@ -292,6 +327,7 @@ Menu obj[] = {
   Menu("NFC", "SubGhz"),
   Menu("RFID", "SubGhz"),
   Menu("Blutooth", "SubGhz"),
+  Menu("Hello World", "Main Menu"),
 };
 
 Nav menuInterface;
@@ -309,16 +345,12 @@ void startup() {
 }
 
 void testing() {
-  delay(2000);
-  obj[1].Draw();
-  delay(2000);
+  delay(1000);
+  Menu::SetChildrenArray(obj[0].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
   menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
-  obj[1].Draw();
+  obj[0].Draw();
   delay(2000);
-  menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
-  obj[1].Draw();
-  delay(2000);
-  //obj[Menu::GetOpenMenu()].Draw();  // needs to be GetSelMenuNum via GetSelMenuItem
+  obj[Menu::GetSelMenuNum()].Draw();
 }
 
 // -----------------------------------------------------------------------------------------------------------
