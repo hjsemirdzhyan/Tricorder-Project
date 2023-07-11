@@ -12,7 +12,6 @@
   Arduino Uno Flash Memory: 32 KB = 32,768 bytes. Array memory is 4 bytes per element.
 
 */
-
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
@@ -43,7 +42,6 @@ int y_Cursor2 = 15;
 // -----------------------------------------------------------------------------------------------------------
 // Classes ---------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
-
 class Menu {
   String _menuName = "";
   String _childOf = "";
@@ -57,9 +55,7 @@ class Menu {
   static int _sel_menuNum;   //  menu number of seleted submenu
 
 public:
-  Menu(String menuName, String childOf) {
-    this->_menuName = menuName;
-    this->_childOf = childOf;
+  Menu(String menuName, String childOf) : _menuName(menuName), _childOf(childOf) {
   }
 
   void Draw() {
@@ -154,15 +150,17 @@ public:
   }
 
   void CalcNumOfChildren() {
-    int numOfChildren = 0;
+    int numOfChildren = 0;//sus
     if (debug == true) {
       Serial.println("Method, CalcNumOfChildren");
+      Serial.print("    numOfMenus: ");
+      Serial.println(numOfMenus);
     }
     for (int i = 0; i < numOfMenus; i++) {
       if (obj[i]._childOf == _menuName) {
         numOfChildren++;
         if (debug == true) {
-          Serial.print("    Number of children ");
+          Serial.print("    Count of children ");
           Serial.println(numOfChildren);
           Serial.print("    Menu # ");
           Serial.print(i);
@@ -214,23 +212,26 @@ public:
     obj = _obj;
   }
 
-  static void SetSelMenuItem(int menuItem) {  //  convert to act for both menuitem and menunum. no need to have diff setters if they both will always happen at the same time.
+  static void SetSelMenuItem(int menuItem) {
+    int a = menuItem;
     _sel_menuItem = menuItem;
     if (debug == true) {
       Serial.println("Method, SetSelMenuItem");
       Serial.print("    Selected menu item #: ");
-      Serial.println(_sel_menuItem);
+      Serial.println(a);
     }
-    SetSelMenuNum(_sel_menuItem);             //  move to nav class under open method, eventaully. So this isn't called until actually needed. 
+    SetSelMenuNum(a);  //  move to nav class under open method, eventaully. So this isn't called until actually needed.
   }
 
-  static void SetSelMenuNum(int menuNum) {    //  takes in the menuItem and sets menuNumber
-    int a = childrenArray[menuNum];
+  static void SetSelMenuNum(int menuItem) {  //  takes in the menuItem and sets menuNumber
+    int a = childrenArray[menuItem];
     _sel_menuNum = a;
     if (debug == true) {
       Serial.println("Method, SetSelMenuNum");
       Serial.print("    Selected menu #: ");
       Serial.println(_sel_menuNum);
+      Serial.print("    childrenArray[menuNum] equals: ");
+      Serial.println(a);
     }
   }
 
@@ -247,7 +248,7 @@ public:
   }
 
   static void SetChildrenArray(int* _childrenArray) {
-    int a = obj[GetOpenMenu()].GetNumOfChildren(); //   will need to change the zero to a variable.
+    int a = obj[GetOpenMenu()].GetNumOfChildren();  //   will need to change the zero to a variable.
     childrenArray = new int[a];
     if (a > 0) {
       for (int i = 0; i < a; i++) {
@@ -283,30 +284,49 @@ public:
 };
 
 class Nav {
+  Menu& _currentMenu;  // Member variable to store the current menu object aka should alwasy be storing openMenu
+  Menu* _allMenus;
+
 public:
-  void GoDown(Menu& menuObj) {  // the specific instance(object) of menu is being passed in as a parameter. Ex obj[openMenu] is the intended parameter
+  Nav(Menu& currentMenu, Menu* allMenus) : _currentMenu(currentMenu), _allMenus(allMenus) {}  // need a setter for current menu!!!!!!
+
+  void GoDown() {
     int a = Menu::GetSelMenuItem();
     int b = a + 1;
-    int c = menuObj.GetNumOfChildren();  //  get the number of children menus of the open menu
-    if (b > c) {                         //  if we try to navigate passed the last child menu, reset to the top
+    int c = _currentMenu.GetNumOfChildren();  //  get the number of children menus of the open menu
+    if (b > c) {                              //  if we try to navigate passed the last child menu, reset to the top
       b = 0;
     }
-    Menu::SetSelMenuItem(b);  //  calls the setter of the selected menu item variable
+    Menu::SetSelMenuItem(b);  // Somethings dun fucked up here. calls the setter of the selected menu item variable
+    _currentMenu.Draw();
 
     if (debug == true) {
       Serial.println("Method, GoDown");
+      Serial.print("    _currentMenu is ");
+      Serial.println(_currentMenu.GetMenuName());
       Serial.print("    Retrieved selected menu item # is (starts from zero): ");
       Serial.println(a);
-      Serial.print("    Next menu item # should be: ");
+      Serial.print("    Menu item # should now be: ");
       Serial.println(b);
       Serial.print("    Retrieved number of children is (doesnt start from zero): ");
       Serial.println(c);
     }
   }
 
-  void OpenSelected(Menu& menuObj) { //   you pass the instance of the menu object in using the parameter. That's how it knows what instance to use.
-  // maybe this method isn't necessary
-    menuObj.Draw();
+  void OpenSelected() {
+    int a = Menu::GetSelMenuNum();
+    //_allMenus[a].Draw();
+
+    if (debug == true) {
+      Serial.println("Method, OpenSelected");
+      Serial.print("    Retrieved selected menu # is: ");
+      Serial.println(a);
+    }
+  }
+
+  void TestMethod() {
+    Serial.println("Method, TestMethod");
+    Serial.println("    Nothing should be happening here");
   }
 };
 // -----------------------------------------------------------------------------------------------------------
@@ -327,41 +347,48 @@ Menu obj[] = {
   Menu("NFC", "SubGhz"),
   Menu("RFID", "SubGhz"),
   Menu("Blutooth", "SubGhz"),
-  Menu("Hello World", "Main Menu"),
+  Menu("Body Profile", "Main Menu"),
+  Menu("Accelerometer", "Enviro"),
 };
 
-Nav menuInterface;
-
-int Menu::_openMenu = 0;
+int Menu::_openMenu = 0;  // these set the initial values for some of the static variables in the menu class
 int Menu::_sel_menuItem = 0;
 int Menu::_sel_menuNum = 0;
+
+Nav menuInterface(obj[Menu::GetOpenMenu()], obj);  // initializes the menuInterface object of the nav class with the current open menu (default is main menu)
 
 // -----------------------------------------------------------------------------------------------------------
 // Functions -------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
 void startup() {
   tft.begin();
-  obj[0].Draw();
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  obj[Menu::GetOpenMenu()].Draw();                                      // displays the starting menu (by running a lot of other methods first)
+  delay(500);
+  Menu::SetChildrenArray(obj[Menu::GetOpenMenu()].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
 }
 
 void testing() {
-  delay(1000);
-  Menu::SetChildrenArray(obj[0].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
-  menuInterface.GoDown(obj[Menu::GetOpenMenu()]);
-  obj[0].Draw();
-  delay(2000);
-  obj[Menu::GetSelMenuNum()].Draw();
+   delay(1000);
+  // menuInterface.TestMethod();
+   menuInterface.GoDown();
+  // delay(1000);
+  // menuInterface.GoDown();
+  // delay(1000);
+  // menuInterface.OpenSelected();
 }
 
 // -----------------------------------------------------------------------------------------------------------
 // Loops -----------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
 void setup() {
+  Serial.begin(9600);
   numOfMenus = sizeof(obj) / sizeof(obj[0]);
   Menu::SetObj(obj);
-  Serial.begin(9600);
   startup();
-  testing();
+  testing();  // this won't be in setup once testing is complete.
 }
 
 void loop() {
