@@ -55,7 +55,8 @@ class Menu {
   static int _sel_menuNum;   //  menu number of seleted submenu
 
 public:
-  Menu(String menuName, String childOf) : _menuName(menuName), _childOf(childOf) {
+  Menu(String menuName, String childOf)
+    : _menuName(menuName), _childOf(childOf) {
   }
 
   void Draw() {
@@ -150,7 +151,7 @@ public:
   }
 
   void CalcNumOfChildren() {
-    int numOfChildren = 0;//sus
+    int numOfChildren = 0;  //sus
     if (debug == true) {
       Serial.println("Method, CalcNumOfChildren");
       Serial.print("    numOfMenus: ");
@@ -284,11 +285,12 @@ public:
 };
 
 class Nav {
-  Menu& _currentMenu;  // Member variable to store the current menu object aka should alwasy be storing openMenu
+  Menu& _currentMenu;  // Member variable to store the current menu object aka should always be storing openMenu
   Menu* _allMenus;
 
 public:
-  Nav(Menu& currentMenu, Menu* allMenus) : _currentMenu(currentMenu), _allMenus(allMenus) {}  // need a setter for current menu!!!!!!
+  Nav(Menu& currentMenu, Menu* allMenus)
+    : _currentMenu(currentMenu), _allMenus(allMenus) {}  // need a setter for current menu!!!!!!
 
   void GoDown() {
     int a = Menu::GetSelMenuItem();
@@ -324,9 +326,11 @@ public:
     }
   }
 
-  void TestMethod() {
-    Serial.println("Method, TestMethod");
-    Serial.println("    Nothing should be happening here");
+  void GetCurrentMenu() {
+    if (debug == true) {
+      Serial.println("Method, GetCurrentMenu");
+      Serial.println("    Nothing should be happening here");
+    }
   }
 };
 // -----------------------------------------------------------------------------------------------------------
@@ -362,18 +366,19 @@ Nav menuInterface(obj[Menu::GetOpenMenu()], obj);  // initializes the menuInterf
 // -----------------------------------------------------------------------------------------------------------
 void startup() {
   tft.begin();
-  Serial.println();
-  Serial.println();
-  Serial.println();
-  obj[Menu::GetOpenMenu()].Draw();                                      // displays the starting menu (by running a lot of other methods first)
+  if (debug == true) {
+    Serial.println();
+    Serial.println();
+    Serial.println();
+  }
+  obj[Menu::GetOpenMenu()].Draw();  // displays the starting menu (by running a lot of other methods first)
   delay(500);
   Menu::SetChildrenArray(obj[Menu::GetOpenMenu()].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
 }
 
 void testing() {
-   delay(1000);
-  // menuInterface.TestMethod();
-   menuInterface.GoDown();
+  delay(1000);
+  menuInterface.GoDown(); // problem code
   // delay(1000);
   // menuInterface.GoDown();
   // delay(1000);
