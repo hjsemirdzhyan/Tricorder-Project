@@ -282,6 +282,29 @@ public:
     }
     return _childrenArray;
   }
+
+  static void GoDown() { // attempt at moving the godown member into the menu class in order to make coding easier for myself. 
+    int a = GetSelMenuItem();
+    int b = a + 1;
+    int c = obj[GetOpenMenu()].GetNumOfChildren();  //  get the number of children menus of the open menu
+    if (b > c) {                                    //  if we try to navigate passed the last child menu, reset to the top
+      b = 0;
+    }
+    SetSelMenuItem(b);
+    obj[GetOpenMenu()].Draw();
+
+    if (debug == true) {
+      Serial.println("Method, GoDown");
+      Serial.print("    _openMenu is ");
+      Serial.println(obj[GetOpenMenu()].GetMenuName());
+      Serial.print("    Retrieved selected menu item # is (starts from zero): ");
+      Serial.println(a);
+      Serial.print("    Menu item # should now be: ");
+      Serial.println(b);
+      Serial.print("    Retrieved number of children is (doesnt start from zero): ");
+      Serial.println(c);
+    }
+  }
 };
 
 class Nav {
@@ -353,13 +376,14 @@ Menu obj[] = {
   Menu("Blutooth", "SubGhz"),
   Menu("Body Profile", "Main Menu"),
   Menu("Accelerometer", "Enviro"),
+  Menu("Hello World", "Main Menu"),
 };
 
 int Menu::_openMenu = 0;  // these set the initial values for some of the static variables in the menu class
 int Menu::_sel_menuItem = 0;
 int Menu::_sel_menuNum = 0;
 
-Nav menuInterface(obj[Menu::GetOpenMenu()], obj);  // initializes the menuInterface object of the nav class with the current open menu (default is main menu)
+Nav menuInterface(obj[0], obj);  // initializes the menuInterface object of the nav class with the current open menu (default is main menu)
 
 // -----------------------------------------------------------------------------------------------------------
 // Functions -------------------------------------------------------------------------------------------------
@@ -371,14 +395,15 @@ void startup() {
     Serial.println();
     Serial.println();
   }
-  obj[Menu::GetOpenMenu()].Draw();  // displays the starting menu (by running a lot of other methods first)
+  obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
   delay(500);
-  Menu::SetChildrenArray(obj[Menu::GetOpenMenu()].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
+  Menu::SetChildrenArray(obj[0].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
 }
 
 void testing() {
   delay(1000);
-  menuInterface.GoDown(); // problem code
+  Menu::GoDown(); // attempt at moving navigation into menu class as static members. might be easier than separate class. 
+  //menuInterface.GoDown(); // problem code
   // delay(1000);
   // menuInterface.GoDown();
   // delay(1000);
