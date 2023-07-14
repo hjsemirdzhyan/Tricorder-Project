@@ -60,7 +60,11 @@ public:
   }
 
   void Draw() {
-    SetOpenMenu(_menuName);  //  _openMenu should be set any time a menu is drawn. In case other parts of code foregts to set it from a user interaction.
+    DrawMenu();
+    DrawChildren();
+  }
+
+  void DrawMenu() {
     tft.fillScreen(Display_Color);
     tft.setCursor(0, 0);
     tft.setTextColor(Text_Color);
@@ -73,7 +77,6 @@ public:
       Serial.print(tft.getCursorX());
       Serial.println(tft.getCursorY());
     }
-    DrawChildren();
   }
 
   void DrawChildren() {
@@ -84,28 +87,33 @@ public:
       Serial.println("    _childrenArray is already populated");
     }
     int a = _numOfChildren;
-    String b = "";
+    String b = ""; // Culprit! For some reason this isn't able to store some of the menu names. Length is a factor but not per menu name but rather all menu names lengths totalled. maybe. 
     tft.setTextSize(1);
     if (debug == true) {
       Serial.println("Method, DrawChildren");
+      Serial.print("    Output of var a: ");
+      Serial.println(a);
     }
     if (a < 1) {
-      Serial.println("    No Children");
+      if (debug == true) {
+        Serial.println("    No Children");
+      }
+      return; //sus
     } else {
       for (int i = 0; i < a; i++) {
-        b = obj[_childrenArray[i]]._menuName;  //  menu name of child menus
+      //  b = obj[_childrenArray[i]]._menuName;  //  menu name of child menus
         if (i == _sel_menuItem) {
           tft.setTextColor(Sel_Color);
-          tft.println(b);
+          tft.println(obj[_childrenArray[i]]._menuName);
         } else {
           tft.setTextColor(Text_Color);
-          tft.println(b);
+          tft.println(obj[_childrenArray[i]]._menuName);
         }
         if (debug == true) {
           Serial.print("    Child menu ");
           Serial.print(_childrenArray[i]);
           Serial.print(" ");
-          Serial.print(b);
+          Serial.print(obj[_childrenArray[i]]._menuName);
           Serial.print(" at position ");
           Serial.print(i);
           Serial.print(" cursor x,y: ");
@@ -179,7 +187,7 @@ public:
     }
   }
 
-  String GetMenuName() {
+  String GetMenuName() { // returns the menu name of a provided object
     return _menuName;
   }
 
@@ -187,8 +195,8 @@ public:
     return _childOf;
   }
 
-  static int GetOpenMenu() {
-    if (debug == true) {
+  static int GetOpenMenu() { // returns the index number of the openMenu, not its name
+    if (false == true) {
       Serial.println("Method, GetOpenMenu");
       Serial.print("    Open menu #: ");
       Serial.println(_openMenu);
@@ -213,19 +221,23 @@ public:
     obj = _obj;
   }
 
+  static void SetSelMenu(int menuItem) { //SUS!!!!
+    SetSelMenuItem(menuItem);
+    SetSelMenuNum(menuItem);
+  }
+
   static void SetSelMenuItem(int menuItem) {
     int a = menuItem;
-    _sel_menuItem = menuItem;
+    _sel_menuItem = a;
     if (debug == true) {
       Serial.println("Method, SetSelMenuItem");
       Serial.print("    Selected menu item #: ");
-      Serial.println(a);
+      Serial.println(_sel_menuItem);
     }
-    SetSelMenuNum(a);  //  move to nav class under open method, eventaully. So this isn't called until actually needed.
   }
 
   static void SetSelMenuNum(int menuItem) {  //  takes in the menuItem and sets menuNumber
-    int a = childrenArray[menuItem];
+    int a = obj[GetOpenMenu()]._childrenArray[menuItem];
     _sel_menuNum = a;
     if (debug == true) {
       Serial.println("Method, SetSelMenuNum");
@@ -249,7 +261,7 @@ public:
   }
 
   static void SetChildrenArray(int* _childrenArray) {
-    int a = obj[GetOpenMenu()].GetNumOfChildren();  //   will need to change the zero to a variable.
+    int a = obj[GetOpenMenu()].GetNumOfChildren();
     childrenArray = new int[a];
     if (a > 0) {
       for (int i = 0; i < a; i++) {
@@ -290,8 +302,8 @@ public:
     if (b > c) {                                    //  if we try to navigate passed the last child menu, reset to the top
       b = 0;
     }
-    SetSelMenuItem(b);
-    obj[GetOpenMenu()].Draw();
+    SetSelMenu(b);
+    //obj[GetOpenMenu()].Draw(); // sus
 
     if (debug == true) {
       Serial.println("Method, GoDown");
@@ -299,8 +311,10 @@ public:
       Serial.println(obj[GetOpenMenu()].GetMenuName());
       Serial.print("    Retrieved selected menu item # is (starts from zero): ");
       Serial.println(a);
-      Serial.print("    Menu item # should now be: ");
-      Serial.println(b);
+      Serial.print("    Selected menu item # is now: ");
+      Serial.println(GetSelMenuItem());
+      Serial.print("    Which is named ");
+      Serial.println(obj[GetSelMenuNum()]._menuName);
       Serial.print("    Retrieved number of children is (doesnt start from zero): ");
       Serial.println(c);
     }
@@ -359,31 +373,31 @@ public:
 // -----------------------------------------------------------------------------------------------------------
 // Initializations -------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
-Menu* Menu::obj = nullptr;           //  initialize the static member variable
-int* Menu::childrenArray = nullptr;  //  initializes the childrenArray array
+//int* Menu::childrenArray = nullptr;  //  initializes the childrenArray array // sus
 
 Menu obj[] = {
-  Menu("Main Menu", "None"),
-  Menu("Enviro", "Main Menu"),
+  Menu("Main Menu", "None"),              // menu # 0
+  Menu("Enviro", "Main Menu"),            // menu # 1
   Menu("Temp", "Enviro"),
-  Menu("Humidity", "Enviro"),
-  Menu("Location", "Main Menu"),
+  Menu("Body Profile", "Main Menu"),
+  Menu("Humidity", "Enviro"),             // menu # 3
+  Menu("Location", "Main Menu"),          // menu # 4
   Menu("GPS", "Location"),
-  Menu("Baro Pressure", "Enviro"),
+  Menu("Baro_Pressure", "Enviro"),
+  Menu("Hello World", "Main Menu"),
   Menu("SubGhz", "Main Menu"),
   Menu("NFC", "SubGhz"),
   Menu("RFID", "SubGhz"),
   Menu("Blutooth", "SubGhz"),
-  Menu("Body Profile", "Main Menu"),
   Menu("Accelerometer", "Enviro"),
-  Menu("Hello World", "Main Menu"),
 };
+Menu* Menu::obj = nullptr;           //  initialize the static member variable
 
 int Menu::_openMenu = 0;  // these set the initial values for some of the static variables in the menu class
 int Menu::_sel_menuItem = 0;
 int Menu::_sel_menuNum = 0;
 
-Nav menuInterface(obj[0], obj);  // initializes the menuInterface object of the nav class with the current open menu (default is main menu)
+//Nav menuInterface(obj[0], obj);  // initializes the menuInterface object of the nav class with the current open menu (default is main menu)
 
 // -----------------------------------------------------------------------------------------------------------
 // Functions -------------------------------------------------------------------------------------------------
@@ -395,19 +409,16 @@ void startup() {
     Serial.println();
     Serial.println();
   }
+  Serial.print("DEBUGGING IS SET TO ");
+  Serial.println(debug);
   obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
   delay(500);
-  Menu::SetChildrenArray(obj[0].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
+  //Menu::SetChildrenArray(obj[0].GetChildrenArray());  //   calling the SetChildrenArray so that the _childrenArray can be accessable to static members (via childrenArray).
 }
 
 void testing() {
-  delay(1000);
+  delay(500);
   Menu::GoDown(); // attempt at moving navigation into menu class as static members. might be easier than separate class. 
-  //menuInterface.GoDown(); // problem code
-  // delay(1000);
-  // menuInterface.GoDown();
-  // delay(1000);
-  // menuInterface.OpenSelected();
 }
 
 // -----------------------------------------------------------------------------------------------------------
