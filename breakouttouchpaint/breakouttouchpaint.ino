@@ -45,7 +45,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 // For better pressure precision, we need to know the resistance
 // between X+ and X- Use any multimeter to read it
 // For the one we're using, its 300 ohms across the X plate
-TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
 
 // Size of the color selection boxes and the paintbrush size
 #define BOXSIZE 40
@@ -81,9 +81,9 @@ void loop()
   TSPoint p = ts.getPoint();
   
  
-  Serial.print("X = "); Serial.print(p.x);
-  Serial.print("\tY = "); Serial.print(p.y);
-  Serial.print("\tPressure = "); Serial.println(p.z);  
+  //Serial.print("X = "); Serial.print(p.x);
+  //Serial.print("\tY = "); Serial.print(p.y);
+  //Serial.print("\tPressure = "); Serial.println(p.z);  
  
   
   // we have some minimum pressure we consider 'valid'
@@ -96,11 +96,11 @@ void loop()
   p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
   p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
 
-  /*
+  
   Serial.print("("); Serial.print(p.x);
   Serial.print(", "); Serial.print(p.y);
   Serial.println(")");
-  */
+  
 
     
   if (p.y < BOXSIZE) {

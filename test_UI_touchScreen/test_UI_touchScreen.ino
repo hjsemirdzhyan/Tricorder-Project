@@ -1,15 +1,5 @@
 /*
-  Emulator can be found at: https://wokwi.com/projects/308024602434470466
-  C++ tutorial/examples: https://www.w3schools.com/cpp/cpp_oop.asp
-
-
-  In this refactor of the UI code, I'm getting rid of the hard coded menu numbers and positions.
-  The menu numbers will be calculated on the fly depending on the number of menus and where in the array they're added.
-  Similarily, I'll rely on where in the array a menu is added to determine its order on its parent menus page.
-  I think this will GREATLY simplify the code.
-
-  Would I rather calculate the list of submenus for each menu on the fly or do it once and store it in memory?
-  Arduino Uno Flash Memory: 32 KB = 32,768 bytes. Array memory is 4 bytes per element.
+  
 
 */
 
@@ -28,15 +18,15 @@
 #define XP 9   // can be any digital pin
 
 //  calibration data for the raw touch data to the screen coordinates
-#define TS_MINX 150
-#define TS_MINY 120
-#define TS_MAXX 920
-#define TS_MAXY 940
+#define TS_MINX 0
+#define TS_MINY 88
+#define TS_MAXX 240
+#define TS_MAXY 908
 
 #define MINPRESSURE 10
 #define MAXPRESSURE 1000
 
-TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
 
 //  LCD stuff
 #define TFT_DC 9
@@ -48,13 +38,8 @@ const uint16_t Display_Color = ILI9341_BLUE;
 const uint16_t Text_Color = ILI9341_WHITE;
 const uint16_t Sel_Color = ILI9341_RED;
 
-bool debug = true;
+const bool debug = false;
 int numOfMenus = 0;  // should move into menu class as a static int
-
-int y_Cursor1 = 8;
-int y_Cursor2 = 15;
-
-
 
 
 // -----------------------------------------------------------------------------------------------------------
@@ -65,33 +50,37 @@ class Menu {
   int* _childrenArray;     //  a pointer to an array of addresses of children menu numbers (basically, index numbers)
   static Menu* obj;
   static int _openMenu;      //  variable that stores currently open menu number
-  int _sel_yPos = 15;        //  y position of selected submenu
   static int _sel_menuItem;  //  number in child list of where selector is
   static int _sel_menuNum;   //  menu number of seleted submenu
   const char* _menuName;     //  this is a pointer to a character array designated by the constructor of this class
   const char* _childOf;
-  const int _ySpacing = 4;
+  static const int _fontSpacing = 16;
+  static const int _headerFont = 4;
+  static const int _childFont = 2;
+  static int _childYBound;
+  static int _headerYBound;
 
 public:
   Menu(const char menuName[], const char childOf[])
     : _menuName(menuName), _childOf(childOf) {
   }
 
-  void
-  Draw() {
+  void Draw() {
     DrawMenu();
     DrawChildren();
+    CalcTouchBounds();
+    DrawTouchBounds();
   }
 
   void DrawMenu() {
     int a = 0;
-    
+
     tft.fillScreen(Display_Color);
     tft.setCursor(0, a);
     tft.setTextColor(Text_Color);
-    tft.setTextSize(4);
+    tft.setTextSize(_headerFont);
     tft.println(_menuName);
-    a = tft.getCursorY() + _ySpacing;
+    a = tft.getCursorY() + _fontSpacing;
     tft.setCursor(0, a);
     if (debug == true) {
       Serial.print("Method, DrawMenu: ");
@@ -111,14 +100,14 @@ public:
         Serial.println("    _childrenArray is already populated");
       }
     }
-    int a = tft.getCursorY();
+    int a = 0;
     int b = _numOfChildren;
 
-    tft.setTextSize(2);
+    tft.setTextSize(_childFont);
     if (debug == true) {
       Serial.println("Method, DrawChildren");
       Serial.print("    Output of var a: ");
-      Serial.println(a);
+      Serial.println(b);
     }
     if (b < 1) {
       if (debug == true) {
@@ -127,14 +116,16 @@ public:
       return;
     } else {
       for (int i = 0; i < b; i++) {
-        if (i == _sel_menuItem) { //  this if statement accounts for which child menu item is currently selected. It highlights it with a unique color
+        if (i == _sel_menuItem) {  //  this if statement accounts for which child menu item is currently selected. It highlights it with a unique color
           tft.setTextColor(Sel_Color);
           tft.println(obj[_childrenArray[i]]._menuName);
-          a = a + _ySpacing;
+          a = tft.getCursorY() + _fontSpacing;
           tft.setCursor(0, a);
-        } else { // the else statement draws all the other non-selected child menus with its standard writing color.
+        } else {  // the else statement draws all the other non-selected child menus with its standard writing color.
           tft.setTextColor(Text_Color);
           tft.println(obj[_childrenArray[i]]._menuName);
+          a = tft.getCursorY() + _fontSpacing;
+          tft.setCursor(0, a);
         }
         if (debug == true) {
           Serial.print("    Child menu ");
@@ -149,6 +140,78 @@ public:
         }
       }
     }
+  }
+
+  static void CalcTouchBounds() {
+    const int font1size = 8;
+    const int font2size = 16;
+    const int font3size = 24;
+    const int font4size = 32;
+    int headerYBound;
+    int childYBound;
+
+    //header bound
+    if (_headerFont == 1) {
+      headerYBound = font1size + (0.5 * _fontSpacing);
+    } else if (_headerFont == 2) {
+      headerYBound = font2size + (0.5 * _fontSpacing);
+    } else if (_headerFont == 3) {
+      headerYBound = font3size + (0.5 * _fontSpacing);
+    } else if (_headerFont == 4) {
+      headerYBound = font4size + (0.5 * _fontSpacing);
+    } else {
+      tft.println("Header font not supported");
+    }
+    
+    _headerYBound = headerYBound;
+
+    if (debug == true) {
+      Serial.println("Method, SelectorSize ");
+      Serial.print("    _headerFont: ");
+      Serial.println(_headerFont);
+      Serial.print("    headerYBound: ");
+      Serial.println(_headerYBound);
+    }
+
+    //child bounds
+    if (_childFont == 1) {
+      childYBound = font1size + _fontSpacing;
+    } else if (_childFont == 2) {
+      childYBound = font2size + _fontSpacing;
+    } else if (_childFont == 3) {
+      childYBound = font3size + _fontSpacing;
+    } else if (_childFont == 4) {
+      childYBound = font4size + _fontSpacing;
+    } else {
+      tft.println("Child font not supported");
+    }
+
+    _childYBound = childYBound;
+
+    if (debug == true) {
+      Serial.print("    _childFont: ");
+      Serial.println(_childFont);
+      Serial.print("    childYBound: ");
+      Serial.println(_childYBound);
+    }
+  }
+
+  static void DrawTouchBounds() {
+    int a = obj[_openMenu]._numOfChildren;
+
+    tft.drawRect(0, 0, tft.width(), _headerYBound, Sel_Color);          // draws bounds around the header menu
+    for (int i = 0; i < a; i++) {                                       //  draws bounds around child menus
+      tft.drawRect(0, _headerYBound+(_childYBound*i), tft.width(), _childYBound, Sel_Color);
+    }
+
+    if (debug == true) {
+      Serial.println("Method, DrawTouchBounds ");
+      Serial.print("    Screen width: ");
+      Serial.println(tft.width());
+      Serial.print("    Screen height: ");
+      Serial.println(tft.height());
+    }
+
   }
 
   void GenerateChildren() {
@@ -376,6 +439,8 @@ Menu* Menu::obj = nullptr;  //initialize the static member variable
 int Menu::_openMenu = 0;      //these set the initial values for some of the static variables in the menu class
 int Menu::_sel_menuItem = 0;  // 0 being the first entry in the _childrenArray array that's used to populate the parent menu page
 int Menu::_sel_menuNum = 1;   //  1 because it corresponds with the first entry in the _childrenArray but since menuNumber is the index number of the obj array, 0 is main menu. 1 is the first child menu. This only holds up if the first menu to be displayed is Main Menu.
+int Menu::_childYBound = 0;
+int Menu::_headerYBound = 0;
 
 // -----------------------------------------------------------------------------------------------------------
 // Functions -------------------------------------------------------------------------------------------------
@@ -395,16 +460,24 @@ void startup() {
 
 void testing() {
   TSPoint p = ts.getPoint();
+    // Scale from ~0->1000 to tft.width using the calibration #'s
+  int xscaled = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
+  int yscaled = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
   if (p.z > ts.pressureThreshhold) {
     Serial.print("X = ");
     Serial.print(p.x);
+    Serial.print(" / ");
+    Serial.print(xscaled);
     Serial.print("\tY = ");
     Serial.print(p.y);
+    Serial.print(" / ");
+    Serial.print(yscaled);
     Serial.print("\tPressure = ");
     Serial.println(p.z);
   }
-  delay(100);
+  delay(250);
 }
+
 
 // -----------------------------------------------------------------------------------------------------------
 // Loops -----------------------------------------------------------------------------------------------------
@@ -414,6 +487,7 @@ void setup() {
   numOfMenus = sizeof(obj) / sizeof(obj[0]);
   Menu::SetObj(obj);
   startup();
+  //Menu::CalcTouchBounds();
 }
 
 void loop() {
