@@ -19,9 +19,9 @@
 
 //  calibration data for the raw touch data to the screen coordinates
 #define TS_MINX 0
-#define TS_MINY 88
+#define TS_MINY 0
 #define TS_MAXX 240
-#define TS_MAXY 908
+#define TS_MAXY 905
 
 #define MINPRESSURE 10
 #define MAXPRESSURE 1000
@@ -464,16 +464,16 @@ void testing() {
   int xscaled = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
   int yscaled = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
   if (p.z > ts.pressureThreshhold) {
-    Serial.print("X = ");
-    Serial.print(p.x);
-    Serial.print(" / ");
-    Serial.print(xscaled);
+    //Serial.print("X = ");
+    //Serial.print(p.x);
+    //Serial.print(" / ");
+    //Serial.print(xscaled);
     Serial.print("\tY = ");
     Serial.print(p.y);
     Serial.print(" / ");
-    Serial.print(yscaled);
-    Serial.print("\tPressure = ");
-    Serial.println(p.z);
+    Serial.println(yscaled);
+    //Serial.print("\tPressure = ");
+    //Serial.println(p.z);
   }
   delay(250);
 }
