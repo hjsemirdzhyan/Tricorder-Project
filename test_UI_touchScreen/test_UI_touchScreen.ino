@@ -1,6 +1,15 @@
 /*
-  
-
+   pin outs:
+    LCD___Mega___Uno
+    CLK----D52---D13
+    MISO---D50---D12
+    MOSI---D51---D11
+    CS-----D10---D10
+    D/C----D9----D9
+    YPos---A2----A2
+    XNeg---A3----A3
+    YNeg---D8----D8
+    Xpos---D9----D9
 */
 
 // -----------------------------------------------------------------------------------------------------------
@@ -17,14 +26,9 @@
 #define YM 8   // can be any digital pin
 #define XP 9   // can be any digital pin
 
-//  calibration data for the raw touch data to the screen coordinates
-#define TS_MINX 0
-#define TS_MINY 0
-#define TS_MAXX 240
-#define TS_MAXY 905
-
-#define MINPRESSURE 10
-#define MAXPRESSURE 1000
+// calibration values
+float xCalM = 0.0, yCalM = 0.0;  // gradients
+float xCalC = 0.0, yCalC = 0.0;  // y axis crossing points
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
 
@@ -37,14 +41,72 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 const uint16_t Display_Color = ILI9341_BLUE;
 const uint16_t Text_Color = ILI9341_WHITE;
 const uint16_t Sel_Color = ILI9341_RED;
+const uint16_t Blank_Color = ILI9341_BLACK;
+const uint16_t Button_Color = ILI9341_GREEN;
 
-const bool debug = false;
+const bool menuDebug = false;
+const bool touchDebug = false;
 int numOfMenus = 0;  // should move into menu class as a static int
+const int calInLay = 20;
+const int crosshairSize = 20;
 
 
 // -----------------------------------------------------------------------------------------------------------
 // Classes ---------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
+class ScreenPoint {
+public:
+  int16_t x;
+  int16_t y;
+
+  ScreenPoint() {
+    // default contructor
+  }
+
+  ScreenPoint(int16_t xIn, int16_t yIn) {
+    x = xIn;
+    y = yIn;
+  }
+};
+
+class Button {
+  const int _buttonFont = 1;
+
+public:
+  int x;
+  int y;
+  int width;
+  int height;
+  char* text;
+
+  Button() {
+  }
+
+  void initButton(int xPos, int yPos, int butWidth, int butHeight, char* buttonText) {  // why is this not a constructor?
+    x = xPos;
+    y = yPos;
+    width = butWidth;
+    height = butHeight;
+    text = buttonText;
+  }
+
+  void render() {
+    tft.fillRect(x, y, width, height, Button_Color);  // draw rectangle
+    tft.setCursor(x + 5, y + 5);
+    tft.setTextSize(_buttonFont);
+    tft.setTextColor(Text_Color);
+    tft.print(text);
+  }
+
+  bool isClicked(ScreenPoint sp) {
+    if ((sp.x >= x) && (sp.x <= (x + width)) && (sp.y >= y) && (sp.y <= (y + height))) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
 class Menu {
   int _numOfChildren = 0;  //  wont need anymore if array is storing children of parent menu...maybe
   int* _childrenArray;     //  a pointer to an array of addresses of children menu numbers (basically, index numbers)
@@ -69,7 +131,7 @@ public:
     DrawMenu();
     DrawChildren();
     CalcTouchBounds();
-    DrawTouchBounds();
+    //DrawTouchBounds();
   }
 
   void DrawMenu() {
@@ -82,7 +144,7 @@ public:
     tft.println(_menuName);
     a = tft.getCursorY() + _fontSpacing;
     tft.setCursor(0, a);
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.print("Method, DrawMenu: ");
       Serial.println(_menuName);
       Serial.print("    Heading cursor x,y are ");
@@ -95,7 +157,7 @@ public:
     if (_childrenArray == nullptr) {
       GenerateChildren();  //  Generate children array only if it hasn't been populated yet (in order to save processing time)
     } else {
-      if (debug == true) {
+      if (menuDebug == true) {
         Serial.println("Skipped, GenerateChildren");
         Serial.println("    _childrenArray is already populated");
       }
@@ -104,13 +166,13 @@ public:
     int b = _numOfChildren;
 
     tft.setTextSize(_childFont);
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, DrawChildren");
       Serial.print("    Output of var a: ");
       Serial.println(b);
     }
     if (b < 1) {
-      if (debug == true) {
+      if (menuDebug == true) {
         Serial.println("    No Children");
       }
       return;
@@ -127,7 +189,7 @@ public:
           a = tft.getCursorY() + _fontSpacing;
           tft.setCursor(0, a);
         }
-        if (debug == true) {
+        if (menuDebug == true) {
           Serial.print("    Child menu ");
           Serial.print(_childrenArray[i]);
           Serial.print(" ");
@@ -162,10 +224,10 @@ public:
     } else {
       tft.println("Header font not supported");
     }
-    
+
     _headerYBound = headerYBound;
 
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, SelectorSize ");
       Serial.print("    _headerFont: ");
       Serial.println(_headerFont);
@@ -188,7 +250,7 @@ public:
 
     _childYBound = childYBound;
 
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.print("    _childFont: ");
       Serial.println(_childFont);
       Serial.print("    childYBound: ");
@@ -196,22 +258,21 @@ public:
     }
   }
 
-  static void DrawTouchBounds() {
+  static void DrawTouchBounds() {  // not for actual use. Only for debuging purposes
     int a = obj[_openMenu]._numOfChildren;
 
-    tft.drawRect(0, 0, tft.width(), _headerYBound, Sel_Color);          // draws bounds around the header menu
-    for (int i = 0; i < a; i++) {                                       //  draws bounds around child menus
-      tft.drawRect(0, _headerYBound+(_childYBound*i), tft.width(), _childYBound, Sel_Color);
+    tft.drawRect(0, 0, tft.width(), _headerYBound, Sel_Color);  // draws bounds around the header menu
+    for (int i = 0; i < a; i++) {                               //  draws bounds around child menus
+      tft.drawRect(0, _headerYBound + (_childYBound * i), tft.width(), _childYBound, Sel_Color);
     }
 
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, DrawTouchBounds ");
       Serial.print("    Screen width: ");
       Serial.println(tft.width());
       Serial.print("    Screen height: ");
       Serial.println(tft.height());
     }
-
   }
 
   void GenerateChildren() {
@@ -228,7 +289,7 @@ public:
       }
     }
 
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, GenerateChildren");
       Serial.print("    Children of ");
       Serial.print(_menuName);
@@ -250,7 +311,7 @@ public:
 
   void CalcNumOfChildren() {
     int numOfChildren = 0;
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, CalcNumOfChildren");
       Serial.print("    numOfMenus: ");
       Serial.println(numOfMenus);
@@ -258,7 +319,7 @@ public:
     for (int i = 0; i < numOfMenus; i++) {
       if (obj[i]._childOf == _menuName) {
         numOfChildren++;
-        if (debug == true) {
+        if (menuDebug == true) {
           Serial.print("    Children Count: ");
           Serial.print(numOfChildren);
           Serial.print("    Menu # ");
@@ -269,7 +330,7 @@ public:
           Serial.println(_menuName);
         }
       } else {
-        if (debug == true) {
+        if (menuDebug == true) {
           Serial.print("    Children Count: ");
           Serial.print(numOfChildren);
           Serial.print("    Menu # ");
@@ -282,7 +343,7 @@ public:
       }
     }
     _numOfChildren = numOfChildren;
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.print("    _numOfChildren = ");
       Serial.println(_numOfChildren);
     }
@@ -311,7 +372,7 @@ public:
         _openMenu = i;
       }
     }
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, SetOpenMenu");
       Serial.print("    Open menu #: ");
       Serial.println(_openMenu);
@@ -327,10 +388,10 @@ public:
     SetSelMenuNum(menuItem);
   }
 
-  static void SetSelMenuItem(int menuItem) {
+  static void SetSelMenuItem(int menuItem) {  // i think this is now obsolete for touchscreen use
     int a = menuItem;
     _sel_menuItem = a;
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, SetSelMenuItem");
       Serial.print("    Selected menu item #: ");
       Serial.println(_sel_menuItem);
@@ -340,13 +401,51 @@ public:
   static void SetSelMenuNum(int menuItem) {  //  takes in the menuItem and sets menuNumber
     int a = obj[GetOpenMenu()]._childrenArray[menuItem];
     _sel_menuNum = a;
-    if (debug == true) {
+    if (true == true) {
       Serial.println("Method, SetSelMenuNum");
       Serial.print("    Selected menu #: ");
       Serial.println(_sel_menuNum);
       Serial.print("    childrenArray[menuNum] equals: ");
       Serial.println(a);
     }
+  }
+
+  static void SetSelMenu1(ScreenPoint sp) {
+    char a = obj[_sel_menuNum]._menuName;  //  grabbing menuy name so i can clear out its selection color before new selection is made
+
+    if (true == true) {
+      Serial.println("Method, SetSelMenu1");
+      Serial.print("    LCD X: ");
+      Serial.print(sp.x);
+      Serial.print("\tLCD Y: ");
+      Serial.println(sp.y);
+      delay(500);
+    }
+
+    if (sp.y <= _headerYBound + (_childYBound * 0)) {  // wont account for menu lengths greater than 6
+      return;
+    } else if (sp.y <= _headerYBound + (_childYBound * 1)) {  // env
+      SetSelMenu(0);
+    } else if (sp.y <= _headerYBound + (_childYBound * 2)) {
+      SetSelMenu(1);
+    } else if (sp.y <= _headerYBound + (_childYBound * 3)) {
+      SetSelMenu(2);
+    } else if (sp.y <= _headerYBound + (_childYBound * 4)) {
+      SetSelMenu(3);
+    } else if (sp.y <= _headerYBound + (_childYBound * 5)) {
+      SetSelMenu(4);
+    } else if (sp.y <= _headerYBound + (_childYBound * 6)) {
+      SetSelMenu(5);
+    }
+
+    obj[_openMenu].Draw();
+    // first, set new active color
+    // next, clear out old color
+    //_headerYBound + (_childYBound * i)
+    //tft.setCursor(50, 100);??
+    //tft.setTextSize(_childFont);
+    //tft.setTextColor(Text_Color);
+    // tft.print(a);
   }
 
   static int GetSelMenuItem() {
@@ -362,7 +461,7 @@ public:
   }
 
   int* GetChildrenArray() {
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, GetChildrenArray");
       Serial.print("    Returned: ");
       for (int i = 0; i < _numOfChildren; i++) {
@@ -384,7 +483,7 @@ public:
     SetSelMenu(b);
     obj[_openMenu].Draw();
 
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, GoDown");
       Serial.print("    _openMenu is ");
       Serial.println(obj[_openMenu]._menuName);
@@ -403,13 +502,18 @@ public:
     int a = _sel_menuNum;
     obj[a].Draw();
 
-    if (debug == true) {
+    if (menuDebug == true) {
       Serial.println("Method, OpenSelected");
       Serial.print("    _sel_menuNum is ");
       Serial.print(a);
       Serial.print(" which is named ");
       Serial.println(obj[a]._menuName);
     }
+  }
+
+  static void GoBack() {
+    int a = obj[GetOpenMenu()].GetChildOf();
+    obj[a].Draw();
   }
 };
 
@@ -436,6 +540,11 @@ Menu obj[] = {
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable
 
+ScreenPoint sp;
+
+Button sel;
+Button back;
+
 int Menu::_openMenu = 0;      //these set the initial values for some of the static variables in the menu class
 int Menu::_sel_menuItem = 0;  // 0 being the first entry in the _childrenArray array that's used to populate the parent menu page
 int Menu::_sel_menuNum = 1;   //  1 because it corresponds with the first entry in the _childrenArray but since menuNumber is the index number of the obj array, 0 is main menu. 1 is the first child menu. This only holds up if the first menu to be displayed is Main Menu.
@@ -447,37 +556,136 @@ int Menu::_headerYBound = 0;
 // -----------------------------------------------------------------------------------------------------------
 void startup() {
   tft.begin();
-  if (debug == true) {
+  if (menuDebug == true) {
     Serial.println();
     Serial.println();
     Serial.println();
   }
   Serial.print("DEBUGGING IS SET TO ");
-  Serial.println(debug);
+  Serial.println(menuDebug);
+  calibrateTouchScreen();
+  delay(500);
   obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
+  sel.initButton(tft.width() - 50, tft.height() - 30, 50, 30, "Select");
+  back.initButton(0, tft.height() - 30, 50, 30, "Back");
+  renderNavButtons();
   delay(500);
 }
 
-void testing() {
-  TSPoint p = ts.getPoint();
-    // Scale from ~0->1000 to tft.width using the calibration #'s
-  int xscaled = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-  int yscaled = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
-  if (p.z > ts.pressureThreshhold) {
-    //Serial.print("X = ");
-    //Serial.print(p.x);
-    //Serial.print(" / ");
-    //Serial.print(xscaled);
-    Serial.print("\tY = ");
-    Serial.print(p.y);
-    Serial.print(" / ");
-    Serial.println(yscaled);
-    //Serial.print("\tPressure = ");
-    //Serial.println(p.z);
+bool isTouched() {
+  TSPoint touchPoint = ts.getPoint();  // can this be passed in instead of calling it? any benefits?
+  if (touchPoint.z > ts.pressureThreshhold) {
+    return true;
+  } else {
+    return false;
   }
-  delay(250);
 }
 
+ScreenPoint getScreenCoords(int16_t x, int16_t y) {
+  int16_t xCoord = round((x * xCalM) + xCalC);
+  int16_t yCoord = round((y * yCalM) + yCalC);
+  if (xCoord < 0) xCoord = 0;
+  if (xCoord >= tft.width()) xCoord = tft.width() - 1;
+  if (yCoord < 0) yCoord = 0;
+  if (yCoord >= tft.height()) yCoord = tft.height() - 1;
+  return (ScreenPoint(xCoord, yCoord));
+}
+
+void calibrateTouchScreen() {
+  TSPoint touchPoint;  //  x and y of detected calibration inputs
+  int16_t x1;
+  int16_t y1;
+  int16_t x2;
+  int16_t y2;
+
+  tft.fillScreen(Blank_Color);
+  // wait for no touch
+  while (isTouched())
+    ;
+  tft.drawFastHLine(calInLay - (crosshairSize / 2), calInLay, crosshairSize, Sel_Color);  //  draws first position. cross hairs intersect at x=20, y=20
+  tft.drawFastVLine(calInLay, calInLay - (crosshairSize / 2), crosshairSize, Sel_Color);
+  while (!isTouched())
+    ;
+  delay(50);
+  touchPoint = ts.getPoint();
+  x1 = touchPoint.x;
+  y1 = touchPoint.y;
+  tft.drawFastHLine(calInLay - (crosshairSize / 2), calInLay, crosshairSize, Blank_Color);  //  draws first position. cross hairs intersect at x=20, y=20
+  tft.drawFastVLine(calInLay, calInLay - (crosshairSize / 2), crosshairSize, Blank_Color);
+  delay(500);
+  while (isTouched())
+    ;
+  tft.drawFastHLine(tft.width() - crosshairSize - calInLay + crosshairSize / 2, tft.height() - calInLay, crosshairSize, Sel_Color);  // define this better
+  tft.drawFastVLine(tft.width() - calInLay, tft.height() - calInLay - crosshairSize / 2, crosshairSize, Sel_Color);
+  while (!isTouched())
+    ;
+  delay(50);
+  touchPoint = ts.getPoint();
+  x2 = touchPoint.x;
+  y2 = touchPoint.y;
+  tft.drawFastHLine(tft.width() - crosshairSize - calInLay + crosshairSize / 2, tft.height() - calInLay, crosshairSize, Blank_Color);  // define this better
+  tft.drawFastVLine(tft.width() - calInLay, tft.height() - calInLay - crosshairSize / 2, crosshairSize, Blank_Color);
+
+  int16_t xDist = tft.width() - (2 * calInLay);   // the 40 is the sum of the inlay point from both points
+  int16_t yDist = tft.height() - (2 * calInLay);  // y distance of the two calibration points that the TS SHOULD match with
+
+  // translate in form pos = m x val + c
+  // x
+  xCalM = (float)xDist / (float)(x2 - x1);
+  xCalC = calInLay - ((float)x1 * xCalM);
+  // y
+  yCalM = (float)yDist / (float)(y2 - y1);
+  yCalC = calInLay - ((float)y1 * yCalM);  // I THINK THE 20 IS WHERE the cross hairs are meant to point
+
+  if (touchDebug == true) {
+    Serial.print("x1 = ");
+    Serial.print(x1);
+    Serial.print(", y1 = ");
+    Serial.println(y1);
+    Serial.print("x2 = ");
+    Serial.print(x2);
+    Serial.print(", y2 = ");
+    Serial.println(y2);
+    Serial.print("xCalM = ");
+    Serial.print(xCalM);
+    Serial.print(", xCalC = ");
+    Serial.println(xCalC);
+    Serial.print("yCalM = ");
+    Serial.print(yCalM);
+    Serial.print(", yCalC = ");
+    Serial.println(yCalC);
+  }
+}
+
+void renderNavButtons() {
+  sel.render();
+  back.render();
+}
+
+void testing() {
+  if (isTouched()) {
+    TSPoint touchPoint = ts.getPoint();
+    sp = getScreenCoords(touchPoint.x, touchPoint.y);
+
+    Menu::SetSelMenu1(sp);
+    renderNavButtons();
+
+    if (sel.isClicked(sp) == true) {
+      Menu::OpenSelected();
+
+    }
+    if (back.isClicked(sp) == true) {
+      Menu::GoBack();
+    }
+
+    if (touchDebug == true) {
+      Serial.print("    Raw X: ");
+      Serial.print(touchPoint.x);
+      Serial.print("\tRaw Y: ");
+      Serial.println(touchPoint.y);
+    }
+  }
+}
 
 // -----------------------------------------------------------------------------------------------------------
 // Loops -----------------------------------------------------------------------------------------------------
@@ -487,7 +695,6 @@ void setup() {
   numOfMenus = sizeof(obj) / sizeof(obj[0]);
   Menu::SetObj(obj);
   startup();
-  //Menu::CalcTouchBounds();
 }
 
 void loop() {

@@ -113,7 +113,7 @@ void calibrateTouchScreen() {
   // wait for no touch
   while (isTouched())
     ;
-  tft.drawFastHLine(10, 20, 20, ILI9341_RED);
+  tft.drawFastHLine(10, 20, 20, ILI9341_RED); //  draws first position. cross hairs intersect at x=20, y=20
   tft.drawFastVLine(20, 10, 20, ILI9341_RED);
   while (!isTouched())
     ;
@@ -121,12 +121,12 @@ void calibrateTouchScreen() {
   p = ts.getPoint();
   x1 = p.x;
   y1 = p.y;
-  tft.drawFastHLine(10, 20, 20, ILI9341_BLACK);
+  tft.drawFastHLine(10, 20, 20, ILI9341_BLACK);// fills in the point position
   tft.drawFastVLine(20, 10, 20, ILI9341_BLACK);
   delay(500);
   while (isTouched())
     ;
-  tft.drawFastHLine(tft.width() - 30, tft.height() - 20, 20, ILI9341_RED);
+  tft.drawFastHLine(tft.width() - 30, tft.height() - 20, 20, ILI9341_RED); // draws second position
   tft.drawFastVLine(tft.width() - 20, tft.height() - 30, 20, ILI9341_RED);
   while (!isTouched())
     ;
@@ -137,8 +137,8 @@ void calibrateTouchScreen() {
   tft.drawFastHLine(tft.width() - 30, tft.height() - 20, 20, ILI9341_BLACK);
   tft.drawFastVLine(tft.width() - 20, tft.height() - 30, 20, ILI9341_BLACK);
 
-  int16_t xDist = tft.width() - 40;
-  int16_t yDist = tft.height() - 40;
+  int16_t xDist = tft.width() - 40; // the 40 is the sum of the inlay point from both points
+  int16_t yDist = tft.height() - 40; // y distance of the two calibration points that the TS SHOULD match with
 
   // translate in form pos = m x val + c
   // x
@@ -146,7 +146,7 @@ void calibrateTouchScreen() {
   xCalC = 20.0 - ((float)x1 * xCalM);
   // y
   yCalM = (float)yDist / (float)(y2 - y1);
-  yCalC = 20.0 - ((float)y1 * yCalM);
+  yCalC = 20.0 - ((float)y1 * yCalM); // I THINK THE 20 IS WHERE the cross hairs are meant to point
 
   Serial.print("x1 = ");
   Serial.print(x1);
@@ -188,6 +188,8 @@ void loop(void) {
   if (isTouched()) {
     TSPoint p = ts.getPoint();
     sp = getScreenCoords(p.x, p.y);
+    Serial.print(p.x);
+    Serial.println(p.y);
     if (button.isClicked(sp)) {
       tft.setCursor(50, 100);
       tft.setTextSize(2);
