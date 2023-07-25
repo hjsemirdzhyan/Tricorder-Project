@@ -1,15 +1,15 @@
 /*
    pin outs:
-    LCD___Mega___Uno
-    CLK----D52---D13
-    MISO---D50---D12
-    MOSI---D51---D11
-    CS-----D10---D10
-    D/C----D9----D9
-    YPos---A2----A2
-    XNeg---A3----A3
-    YNeg---D8----D8
-    Xpos---D9----D9
+    LCD___Mega___Uno___Color
+    CLK----D52---D13---Red
+    MISO---D50---D12---Orange
+    MOSI---D51---D11---Yellow
+    CS-----D10---D10---Green
+    D/C----D9----D9----Blue
+    YPos---A2----A2----Purple
+    XNeg---A3----A3----Red
+    YNeg---D8----D8----Orange
+    Xpos---D9----D9----Blue
 */
 
 // -----------------------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ const uint16_t Sel_Color = ILI9341_RED;
 const uint16_t Blank_Color = ILI9341_BLACK;
 const uint16_t Button_Color = ILI9341_GREEN;
 
-const bool menuDebug = false;
+const bool menuDebug = true;
 const bool touchDebug = false;
 int numOfMenus = 0;  // should move into menu class as a static int
 const int calInLay = 20;
@@ -135,8 +135,11 @@ public:
   }
 
   void DrawMenu() {
+    if (_openMenu >= numOfMenus) {
+      BlueScreenOfDeath();
+      return;
+    }
     int a = 0;
-
     tft.fillScreen(Display_Color);
     tft.setCursor(0, a);
     tft.setTextColor(Text_Color);
@@ -150,6 +153,8 @@ public:
       Serial.print("    Heading cursor x,y are ");
       Serial.print(tft.getCursorX());
       Serial.println(tft.getCursorY());
+      Serial.print("    _openMenu: ");
+      Serial.println(_openMenu);
     }
   }
 
@@ -227,7 +232,7 @@ public:
 
     _headerYBound = headerYBound;
 
-    if (menuDebug == true) {
+    if (false == true) {
       Serial.println("Method, SelectorSize ");
       Serial.print("    _headerFont: ");
       Serial.println(_headerFont);
@@ -353,12 +358,28 @@ public:
     return _menuName;
   }
 
-  char GetChildOf() {
+  static int GetMenuNum(char menuName) {  // takes in a name and returns its number
+    for (int i = 0; i < numOfMenus; i++) {
+      if (obj[i]._menuName == menuName) {
+        return i;
+      }
+    }
+  }
+
+  int GetInstancedMenuNum(char menuName) {
+    for (int i = 0; i < numOfMenus; i++) {
+      if (_menuName == menuName) {
+        return i;
+      }
+    }
+  }
+
+  char GetChildOf() {  //  returns name of parent menu
     return _childOf;
   }
 
   static int GetOpenMenu() {  // returns the index number of the openMenu, not its name
-    if (false == true) {
+    if (menuDebug == true) {
       Serial.println("Method, GetOpenMenu");
       Serial.print("    Open menu #: ");
       Serial.println(_openMenu);
@@ -422,7 +443,7 @@ public:
       delay(500);
     }
 
-    if (sp.y <= _headerYBound + (_childYBound * 0)) {  // wont account for menu lengths greater than 6
+    if (sp.y <= _headerYBound + (_childYBound * 0)) {  // wont account for menu lengths greater than 6. wont account for less than 6 either.
       return;
     } else if (sp.y <= _headerYBound + (_childYBound * 1)) {  // env
       SetSelMenu(0);
@@ -500,20 +521,32 @@ public:
 
   static void OpenSelected() {  // needs to get the selected menu number and then pass that menu number into the draw method.
     int a = _sel_menuNum;
-    obj[a].Draw();
-
+    _openMenu = a;
     if (menuDebug == true) {
       Serial.println("Method, OpenSelected");
       Serial.print("    _sel_menuNum is ");
-      Serial.print(a);
+      Serial.print(_openMenu);
       Serial.print(" which is named ");
       Serial.println(obj[a]._menuName);
     }
+    obj[_openMenu].Draw();
   }
 
   static void GoBack() {
-    int a = obj[GetOpenMenu()].GetChildOf();
-    obj[a].Draw();
+    int a = GetMenuNum(obj[_openMenu].GetChildOf());
+    _openMenu = a;
+    Serial.println("Method, GoBack");
+    Serial.print("    _openMenu: ");
+    Serial.println(_openMenu);
+    obj[_openMenu].Draw();
+  }
+
+  static void BlueScreenOfDeath() {
+    tft.fillScreen(Blank_Color);
+    tft.setCursor(0, tft.height() / 2);
+    tft.setTextColor(Sel_Color);
+    tft.setTextSize(_headerFont);
+    tft.println("Oopse, no page found   =/");
   }
 };
 
@@ -521,21 +554,21 @@ public:
 // Initializations -------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------
 Menu obj[] = {
-  Menu("Main Menu", "None"),
-  Menu("Enviroment", "Main Menu"),
-  Menu("Temperature", "Enviroment"),
-  Menu("Body Profile", "Main Menu"),
-  Menu("Humidity", "Enviroment"),
-  Menu("Location", "Main Menu"),
-  Menu("GPS", "Location"),
-  Menu("Barometric Pressure", "Enviroment"),
-  Menu("Hello World", "Main Menu"),
-  Menu("SubGhz", "Main Menu"),
-  Menu("NFC", "SubGhz"),
-  Menu("RFID", "SubGhz"),
-  Menu("Blutooth", "SubGhz"),
-  Menu("Accelerometer", "Enviroment"),
-  Menu("Integrated Circuit", "Main Menu"),
+  Menu("Main Menu", "None"),                  //0
+  Menu("Enviroment", "Main Menu"),            //1
+  Menu("Temperature", "Enviroment"),          //2
+  Menu("Body Profile", "Main Menu"),          //3
+  Menu("Humidity", "Enviroment"),             //4
+  Menu("Location", "Main Menu"),              //5
+  Menu("GPS", "Location"),                    //6
+  Menu("Barometric Pressure", "Enviroment"),  //7
+  Menu("Hello World", "Main Menu"),           //8
+  Menu("SubGhz", "Main Menu"),                //9
+  Menu("NFC", "SubGhz"),                      //10
+  Menu("RFID", "SubGhz"),                     //11
+  Menu("Blutooth", "SubGhz"),                 //12
+  Menu("Accelerometer", "Enviroment"),        //13
+  Menu("Integrated Circuit", "Main Menu"),    //14
 };
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable
@@ -566,6 +599,7 @@ void startup() {
   calibrateTouchScreen();
   delay(500);
   obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
+
   sel.initButton(tft.width() - 50, tft.height() - 30, 50, 30, "Select");
   back.initButton(0, tft.height() - 30, 50, 30, "Back");
   renderNavButtons();
@@ -667,15 +701,17 @@ void testing() {
     TSPoint touchPoint = ts.getPoint();
     sp = getScreenCoords(touchPoint.x, touchPoint.y);
 
-    Menu::SetSelMenu1(sp);
-    renderNavButtons();
-
-    if (sel.isClicked(sp) == true) {
+    if (sel.isClicked(sp) == false && back.isClicked(sp) == false) {
+      Menu::SetSelMenu1(sp);
+      renderNavButtons();
+    } else if (sel.isClicked(sp) == true) {
       Menu::OpenSelected();
-
-    }
-    if (back.isClicked(sp) == true) {
+      Serial.print("clicked sel");
+      renderNavButtons();
+    } else if (back.isClicked(sp) == true) {
       Menu::GoBack();
+      Serial.print("clicked back");
+      renderNavButtons();
     }
 
     if (touchDebug == true) {
