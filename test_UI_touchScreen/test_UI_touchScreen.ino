@@ -12,27 +12,24 @@
     Xpos---D9----D9----Blue
 */
 
-// -----------------------------------------------------------------------------------------------------------
-// Libraries & Definitions -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------------------
+// --------------------------------
+// Libraries & Definitions --------
+// --------------------------------
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include "TouchScreen.h"
 
-//  Touch Screen stuff
 #define YP A2  // must be an analog pin, use "An" notation!
 #define XM A3  // must be an analog pin, use "An" notation!
 #define YM 8   // can be any digital pin
 #define XP 9   // can be any digital pin
 
-// calibration values
 float xCalM = 0.0, yCalM = 0.0;  // gradients
 float xCalC = 0.0, yCalC = 0.0;  // y axis crossing points
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
 
-//  LCD stuff
 #define TFT_DC 9
 #define TFT_CS 10
 
@@ -51,16 +48,15 @@ const int calInLay = 20;
 const int crosshairSize = 20;
 
 
-// -----------------------------------------------------------------------------------------------------------
-// Classes ---------------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------------------
+// --------------------------------
+// Classes ------------------------
+// --------------------------------
 class ScreenPoint {
 public:
   int16_t x;
   int16_t y;
 
   ScreenPoint() {
-    // default contructor
   }
 
   ScreenPoint(int16_t xIn, int16_t yIn) {
@@ -550,9 +546,9 @@ public:
   }
 };
 
-// -----------------------------------------------------------------------------------------------------------
-// Initializations -------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------------------
+// --------------------------------
+// Initializations ----------------
+// --------------------------------
 Menu obj[] = {
   Menu("Main Menu", "None"),                  //0
   Menu("Enviroment", "Main Menu"),            //1
@@ -578,15 +574,15 @@ ScreenPoint sp;
 Button sel;
 Button back;
 
-int Menu::_openMenu = 0;      //these set the initial values for some of the static variables in the menu class
+int Menu::_openMenu = 0;      // these set the initial values for some of the static variables in the menu class
 int Menu::_sel_menuItem = 0;  // 0 being the first entry in the _childrenArray array that's used to populate the parent menu page
-int Menu::_sel_menuNum = 1;   //  1 because it corresponds with the first entry in the _childrenArray but since menuNumber is the index number of the obj array, 0 is main menu. 1 is the first child menu. This only holds up if the first menu to be displayed is Main Menu.
+int Menu::_sel_menuNum = 1;   // 1 because it corresponds with the first entry in the _childrenArray. 1 is the first child menu.
 int Menu::_childYBound = 0;
 int Menu::_headerYBound = 0;
 
-// -----------------------------------------------------------------------------------------------------------
-// Functions -------------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------------------
+// --------------------------------
+// Functions ----------------------
+// --------------------------------
 void startup() {
   tft.begin();
   if (menuDebug == true) {
@@ -723,9 +719,9 @@ void testing() {
   }
 }
 
-// -----------------------------------------------------------------------------------------------------------
-// Loops -----------------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------------------
+// --------------------------------
+// Loops --------------------------
+// --------------------------------
 void setup() {
   Serial.begin(9600);
   numOfMenus = sizeof(obj) / sizeof(obj[0]);
