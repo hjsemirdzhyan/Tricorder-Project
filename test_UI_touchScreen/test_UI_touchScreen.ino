@@ -41,7 +41,7 @@ const uint16_t Sel_Color = ILI9341_RED;
 const uint16_t Blank_Color = ILI9341_BLACK;
 const uint16_t Button_Color = ILI9341_GREEN;
 
-const bool menuDebug = true;
+const bool menuDebug = false;
 const bool touchDebug = false;
 int numOfMenus = 0;  // should move into menu class as a static int
 const int calInLay = 20;
@@ -251,7 +251,7 @@ public:
 
     _childYBound = childYBound;
 
-    if (menuDebug == true) {
+    if (false == true) {
       Serial.print("    _childFont: ");
       Serial.println(_childFont);
       Serial.print("    childYBound: ");
@@ -350,11 +350,11 @@ public:
     }
   }
 
-  char GetMenuName() {  // returns the menu name of a provided object
+  char* GetMenuName() {  // returns the menu name of a provided object
     return _menuName;
   }
 
-  static int GetMenuNum(char menuName) {  // takes in a name and returns its number
+  static int GetMenuNum(char* menuName) {  // takes in a name and returns its number
     for (int i = 0; i < numOfMenus; i++) {
       if (obj[i]._menuName == menuName) {
         return i;
@@ -362,7 +362,7 @@ public:
     }
   }
 
-  int GetInstancedMenuNum(char menuName) {
+  int GetInstancedMenuNum(char menuName) { //returns menu number given a name....not sure about this one. 
     for (int i = 0; i < numOfMenus; i++) {
       if (_menuName == menuName) {
         return i;
@@ -370,7 +370,7 @@ public:
     }
   }
 
-  char GetChildOf() {  //  returns name of parent menu
+  char* GetChildOf() {  //  returns name of parent menu
     return _childOf;
   }
 
@@ -418,7 +418,7 @@ public:
   static void SetSelMenuNum(int menuItem) {  //  takes in the menuItem and sets menuNumber
     int a = obj[GetOpenMenu()]._childrenArray[menuItem];
     _sel_menuNum = a;
-    if (true == true) {
+    if (menuDebug == true) {
       Serial.println("Method, SetSelMenuNum");
       Serial.print("    Selected menu #: ");
       Serial.println(_sel_menuNum);
@@ -430,7 +430,7 @@ public:
   static void SetSelMenu1(ScreenPoint sp) {
     char a = obj[_sel_menuNum]._menuName;  //  grabbing menuy name so i can clear out its selection color before new selection is made
 
-    if (true == true) {
+    if (menuDebug == true) {
       Serial.println("Method, SetSelMenu1");
       Serial.print("    LCD X: ");
       Serial.print(sp.x);
@@ -690,6 +690,7 @@ void calibrateTouchScreen() {
 void renderNavButtons() {
   sel.render();
   back.render();
+  openMenuVars();
 }
 
 void testing() {
@@ -702,11 +703,11 @@ void testing() {
       renderNavButtons();
     } else if (sel.isClicked(sp) == true) {
       Menu::OpenSelected();
-      Serial.print("clicked sel");
+      //Serial.print("clicked sel");
       renderNavButtons();
     } else if (back.isClicked(sp) == true) {
       Menu::GoBack();
-      Serial.print("clicked back");
+      //Serial.print("clicked back");
       renderNavButtons();
     }
 
@@ -717,6 +718,40 @@ void testing() {
       Serial.println(touchPoint.y);
     }
   }
+}
+
+void openMenuVars() {
+  //active children array
+  // name of children array parent
+  //number of children 
+  //open menu
+  //selected menu item
+  //selected menu number
+  //selected menu name
+  //parent menu number and name
+  Serial.println("OPEN MENU VARIABLES REPORT");
+  Serial.print("    Menu Number: ");
+  Serial.println(Menu::GetOpenMenu());
+  Serial.print("    Menu Name: ");
+  Serial.println(obj[Menu::GetOpenMenu()].GetMenuName());
+  Serial.print("    Number of Children: ");
+  Serial.println(obj[Menu::GetOpenMenu()].GetNumOfChildren());
+  Serial.print("    Children Array: ");
+  for (int i = 0; i < obj[Menu::GetOpenMenu()].GetNumOfChildren(); i++) {
+    Serial.print(obj[Menu::GetOpenMenu()].GetChildrenArray()[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+  Serial.print("    Parent Menu: ");
+  Serial.println(obj[Menu::GetOpenMenu()].GetChildOf());
+  Serial.print("    Parent Menu Number: ");
+  Serial.println(Menu::GetMenuNum(obj[Menu::GetOpenMenu()].GetChildOf()));
+  Serial.print("    Selected Menu: ");
+  Serial.println(obj[Menu::GetSelMenuNum()].GetMenuName());
+  Serial.print("    Selected Menu Item: ");
+  Serial.println(Menu::GetSelMenuItem());
+  Serial.print("    Selected Menu Number: ");
+  Serial.println(Menu::GetSelMenuNum());
 }
 
 // --------------------------------
