@@ -163,13 +163,13 @@ public:
         Serial.println("    _childrenArray is already populated");
       }
     }
-    int a = 0;
+    int a = 0;  // cursor related
     int b = _numOfChildren;
 
     tft.setTextSize(_childFont);
     if (menuDebug == true) {
       Serial.println("Method, DrawChildren");
-      Serial.print("    Output of var a: ");
+      Serial.print("    _numOfChildren: ");
       Serial.println(b);
     }
     if (b < 1) {
@@ -362,24 +362,11 @@ public:
     }
   }
 
-  int GetInstancedMenuNum(char menuName) { //returns menu number given a name....not sure about this one. 
-    for (int i = 0; i < numOfMenus; i++) {
-      if (_menuName == menuName) {
-        return i;
-      }
-    }
-  }
-
   char* GetChildOf() {  //  returns name of parent menu
     return _childOf;
   }
 
   static int GetOpenMenu() {  // returns the index number of the openMenu, not its name
-    if (menuDebug == true) {
-      Serial.println("Method, GetOpenMenu");
-      Serial.print("    Open menu #: ");
-      Serial.println(_openMenu);
-    }
     return _openMenu;
   }
 
@@ -400,36 +387,31 @@ public:
     obj = _obj;
   }
 
-  static void SetSelMenu(int menuItem) {
-    SetSelMenuItem(menuItem);
-    SetSelMenuNum(menuItem);
-  }
+  static void SetSelMenu(int menuItem) {  //  takes in the menuItem and sets menuNumber
+   
+    if (obj[_openMenu]._numOfChildren == 0) {
+      _sel_menuNum = _openMenu;
+    } else {
+      _sel_menuNum = obj[_openMenu]._childrenArray[menuItem];
+    }
+    _sel_menuItem = menuItem;
 
-  static void SetSelMenuItem(int menuItem) {  // i think this is now obsolete for touchscreen use
-    int a = menuItem;
-    _sel_menuItem = a;
     if (menuDebug == true) {
-      Serial.println("Method, SetSelMenuItem");
-      Serial.print("    Selected menu item #: ");
+      Serial.println("Method, SetSelMenu");
+      Serial.print("    _openMenu: ");
+      Serial.println(_openMenu);
+      Serial.print("    Open Menu Name: ");
+      Serial.println(obj[_openMenu]._menuName);
+      Serial.print("    obj[_openMenu]._numOfChildren: ");
+      Serial.println(obj[_openMenu]._numOfChildren);
+      Serial.print("    _sel_MenuNum: ");
+      Serial.println(_sel_menuNum);
+      Serial.print("    _sel_menuItem: ");
       Serial.println(_sel_menuItem);
     }
   }
 
-  static void SetSelMenuNum(int menuItem) {  //  takes in the menuItem and sets menuNumber
-    int a = obj[GetOpenMenu()]._childrenArray[menuItem];
-    _sel_menuNum = a;
-    if (menuDebug == true) {
-      Serial.println("Method, SetSelMenuNum");
-      Serial.print("    Selected menu #: ");
-      Serial.println(_sel_menuNum);
-      Serial.print("    childrenArray[menuNum] equals: ");
-      Serial.println(a);
-    }
-  }
-
   static void SetSelMenu1(ScreenPoint sp) {
-    char a = obj[_sel_menuNum]._menuName;  //  grabbing menuy name so i can clear out its selection color before new selection is made
-
     if (menuDebug == true) {
       Serial.println("Method, SetSelMenu1");
       Serial.print("    LCD X: ");
@@ -438,7 +420,6 @@ public:
       Serial.println(sp.y);
       delay(500);
     }
-
     if (sp.y <= _headerYBound + (_childYBound * 0)) {  // wont account for menu lengths greater than 6. wont account for less than 6 either.
       return;
     } else if (sp.y <= _headerYBound + (_childYBound * 1)) {  // env
@@ -454,15 +435,7 @@ public:
     } else if (sp.y <= _headerYBound + (_childYBound * 6)) {
       SetSelMenu(5);
     }
-
     obj[_openMenu].Draw();
-    // first, set new active color
-    // next, clear out old color
-    //_headerYBound + (_childYBound * i)
-    //tft.setCursor(50, 100);??
-    //tft.setTextSize(_childFont);
-    //tft.setTextColor(Text_Color);
-    // tft.print(a);
   }
 
   static int GetSelMenuItem() {
@@ -478,7 +451,7 @@ public:
   }
 
   int* GetChildrenArray() {
-    if (menuDebug == true) {
+    if (false == true) {
       Serial.println("Method, GetChildrenArray");
       Serial.print("    Returned: ");
       for (int i = 0; i < _numOfChildren; i++) {
@@ -490,50 +463,22 @@ public:
     return _childrenArray;
   }
 
-  static void GoDown() {  // attempt at moving the godown member into the menu class in order to make coding easier for myself.
-    int a = _sel_menuItem;
-    int b = a + 1;
-    int c = obj[_openMenu]._numOfChildren;  //  get the number of children menus of the open menu
-    if (b > c) {                            //  if we try to navigate passed the last child menu, reset to the top
-      b = 0;
-    }
-    SetSelMenu(b);
-    obj[_openMenu].Draw();
-
-    if (menuDebug == true) {
-      Serial.println("Method, GoDown");
-      Serial.print("    _openMenu is ");
-      Serial.println(obj[_openMenu]._menuName);
-      Serial.print("    Retrieved selected menu item # is (starts from zero): ");
-      Serial.println(a);
-      Serial.print("    Selected menu item # is now: ");
-      Serial.println(_sel_menuItem);
-      Serial.print("    Which is named ");
-      Serial.println(obj[_sel_menuNum]._menuName);
-      Serial.print("    Retrieved number of children is (doesnt start from zero): ");
-      Serial.println(c);
-    }
-  }
-
   static void OpenSelected() {  // needs to get the selected menu number and then pass that menu number into the draw method.
-    int a = _sel_menuNum;
-    _openMenu = a;
-    if (menuDebug == true) {
-      Serial.println("Method, OpenSelected");
-      Serial.print("    _sel_menuNum is ");
-      Serial.print(_openMenu);
-      Serial.print(" which is named ");
-      Serial.println(obj[a]._menuName);
-    }
+    _openMenu = _sel_menuNum;
+    ;
+    SetSelMenu(0);
     obj[_openMenu].Draw();
   }
 
   static void GoBack() {
     int a = GetMenuNum(obj[_openMenu].GetChildOf());
     _openMenu = a;
-    Serial.println("Method, GoBack");
-    Serial.print("    _openMenu: ");
-    Serial.println(_openMenu);
+    if (menuDebug == true) {
+      Serial.println("Method, GoBack");
+      Serial.print("    _openMenu: ");
+      Serial.println(_openMenu);
+    }
+    SetSelMenu(0);
     obj[_openMenu].Draw();
   }
 
@@ -542,7 +487,7 @@ public:
     tft.setCursor(0, tft.height() / 2);
     tft.setTextColor(Sel_Color);
     tft.setTextSize(_headerFont);
-    tft.println("Oopse, no page found   =/");
+    tft.println("Oopse, things happened   =/");
   }
 };
 
@@ -690,24 +635,22 @@ void calibrateTouchScreen() {
 void renderNavButtons() {
   sel.render();
   back.render();
-  openMenuVars();
+  //openMenuVars();
 }
 
-void testing() {
-  if (isTouched()) {
+void touchDetect() {
+  if (isTouched()) {  // only runs when touch is detected
     TSPoint touchPoint = ts.getPoint();
     sp = getScreenCoords(touchPoint.x, touchPoint.y);
 
-    if (sel.isClicked(sp) == false && back.isClicked(sp) == false) {
+    if (sel.isClicked(sp) == false && back.isClicked(sp) == false) {  // this happens when something on the screen is touched other than the buttons
       Menu::SetSelMenu1(sp);
       renderNavButtons();
-    } else if (sel.isClicked(sp) == true) {
+    } else if (sel.isClicked(sp) == true) {  // this happens when select is clicked
       Menu::OpenSelected();
-      //Serial.print("clicked sel");
       renderNavButtons();
-    } else if (back.isClicked(sp) == true) {
+    } else if (back.isClicked(sp) == true) {  // this happens when back is clicked
       Menu::GoBack();
-      //Serial.print("clicked back");
       renderNavButtons();
     }
 
@@ -721,14 +664,6 @@ void testing() {
 }
 
 void openMenuVars() {
-  //active children array
-  // name of children array parent
-  //number of children 
-  //open menu
-  //selected menu item
-  //selected menu number
-  //selected menu name
-  //parent menu number and name
   Serial.println("OPEN MENU VARIABLES REPORT");
   Serial.print("    Menu Number: ");
   Serial.println(Menu::GetOpenMenu());
@@ -765,5 +700,5 @@ void setup() {
 }
 
 void loop() {
-  testing();
+  touchDetect();
 }
