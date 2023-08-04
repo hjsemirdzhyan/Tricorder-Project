@@ -19,6 +19,11 @@
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include "TouchScreen.h"
+#include "dht.h"
+
+dht DHT;
+
+#define dht_apin A0 // Analog Pin sensor is connected to
 
 #define YP A2  // must be an analog pin, use "An" notation!
 #define XM A3  // must be an analog pin, use "An" notation!
@@ -40,6 +45,7 @@ const uint16_t Text_Color = ILI9341_WHITE;
 const uint16_t Sel_Color = ILI9341_RED;
 const uint16_t Blank_Color = ILI9341_BLACK;
 const uint16_t Button_Color = ILI9341_GREEN;
+const uint16_t Sensor_Color = ILI9341_DARKGREY;
 
 const bool menuDebug = false;
 const bool touchDebug = false;
@@ -51,11 +57,68 @@ const int crosshairSize = 20;
 // --------------------------------
 // Classes ------------------------
 // --------------------------------
-class Sensor { // parent class. will have to learn about heredity
-private:
-public:
-  void Poll() { // the time iteration for using a sensor. AKA update
+class TempHumidSensor {
+  long pollTime;
+  unsigned long previousPoll;
 
+public:
+  TempHumidSensor() {
+  }
+
+  void DisplayReadings(char x) {
+    DHT.read22(dht_apin);
+    tft.setTextColor(Text_Color);
+    tft.setTextSize(4);
+    tft.fillRect(20, 40, tft.width() - 20, tft.height() - 40, Sensor_Color);
+    if (x = 't') {
+      tft.println(GetTemp());
+    } else if (x = 'h') {
+      tft.println(GetHumidity());
+    } else if (x = 'b') {
+      tft.println(GetTemp());
+      tft.println(GetHumidity());
+    } else {
+      return;
+    }
+  }
+
+  double GetHumidity() {
+    return DHT.humidity; 
+  }
+
+  double GetTemp() {
+    return DHT.temperature;
+  }
+
+  bool Update() {
+    unsigned long currentTime = millis();
+
+    if (currentTime - previousPoll >= pollTime) {
+      previousPoll = currentTime;
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+
+class UltraSonicSensor {
+public:
+  UltraSonicSensor() {
+  }
+};
+
+class SensorSuite {  // Must come after specifc sensor classes in order to use composition method instead of inheretance
+  TempHumidSensor internalTempHumid;
+  UltraSonicSensor distanceSensor;
+
+public:
+  SensorSuite() {
+  }
+
+  void displayInternalTempHumid(char x) {
+    internalTempHumid.DisplayReadings(x);
   }
 };
 
@@ -125,17 +188,29 @@ class Menu {
   static const int _childFont = 2;
   static int _childYBound;
   static int _headerYBound;
+  SensorSuite* _sensorSuite;
 
 public:
   Menu(const char menuName[], const char childOf[])
     : _menuName(menuName), _childOf(childOf) {
   }
+  Menu(const char menuName[], const char childOf[], SensorSuite* sensorSuite)  // for menus that have sensors on them
+    : _menuName(menuName), _childOf(childOf), _sensorSuite(sensorSuite) {
+  }
+
 
   void Draw() {
     DrawMenu();
     DrawChildren();
     CalcTouchBounds();
     //DrawTouchBounds();
+    CallSensor();
+  }
+
+  void CallSensor() {
+    if (_menuName == "Temperature" && _sensorSuite != nullptr) { // Note: I corrected the spelling of "Temperature"
+      _sensorSuite->displayInternalTempHumid('t');
+    }
   }
 
   void DrawMenu() {
@@ -396,7 +471,7 @@ public:
   }
 
   static void SetSelMenu(int menuItem) {  //  takes in the menuItem and sets menuNumber
-   
+
     if (obj[_openMenu]._numOfChildren == 0) {
       _sel_menuNum = _openMenu;
     } else {
@@ -502,22 +577,24 @@ public:
 // --------------------------------
 // Initializations ----------------
 // --------------------------------
+SensorSuite tricorder1;
+
 Menu obj[] = {
-  Menu("Main Menu", "None"),                  //0
-  Menu("Enviroment", "Main Menu"),            //1
-  Menu("Temperature", "Enviroment"),          //2
-  Menu("Body Profile", "Main Menu"),          //3
-  Menu("Humidity", "Enviroment"),             //4
-  Menu("Location", "Main Menu"),              //5
-  Menu("GPS", "Location"),                    //6
-  Menu("Barometric Pressure", "Enviroment"),  //7
-  Menu("Hello World", "Main Menu"),           //8
-  Menu("SubGhz", "Main Menu"),                //9
-  Menu("NFC", "SubGhz"),                      //10
-  Menu("RFID", "SubGhz"),                     //11
-  Menu("Blutooth", "SubGhz"),                 //12
-  Menu("Accelerometer", "Enviroment"),        //13
-  Menu("Integrated Circuit", "Main Menu"),    //14
+  Menu("Main Menu", "None"),                       //0
+  Menu("Enviroment", "Main Menu"),                 //1
+  Menu("Temperature", "Enviroment", &tricorder1),  //2
+  Menu("Body Profile", "Main Menu"),               //3
+  Menu("Humidity", "Enviroment", &tricorder1),     //4
+  Menu("Location", "Main Menu"),                   //5
+  Menu("GPS", "Location"),                         //6
+  Menu("Barometric Pressure", "Enviroment"),       //7
+  Menu("Hello World", "Main Menu"),                //8
+  Menu("SubGhz", "Main Menu"),                     //9
+  Menu("NFC", "SubGhz"),                           //10
+  Menu("RFID", "SubGhz"),                          //11
+  Menu("Blutooth", "SubGhz"),                      //12
+  Menu("Accelerometer", "Enviroment"),             //13
+  Menu("Integrated Circuit", "Main Menu"),         //14
 };
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable
