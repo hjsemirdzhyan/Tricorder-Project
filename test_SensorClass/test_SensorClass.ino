@@ -10,7 +10,18 @@
     XNeg---A3----A3----Red
     YNeg---D8----D8----Orange
     Xpos---D9----D9----Blue
+
+    This class will host rendering screens (for now) that the sensors can use to display
+    their data on a menu. The class will also host any of the methods needed in order to 
+    use multiple sensors to provide results. Essentally, all sensor readings will go thru
+    this class, regardless of if it needs to be combined with other sensors or not.
+
+    Specific sensor classes will have functions specific to their own sensor abilities.
+    This class can read temp and humidity. The ultrasonic sensor can use those readings 
+    to provide more preceise results but that type of functionality will need to happen
+    in the SensorSuite class, not in either this class or the ultrasonic class.
 */
+
 
 // --------------------------------
 // Libraries & Definitions --------
@@ -57,29 +68,45 @@ const int crosshairSize = 20;
 // --------------------------------
 // Classes ------------------------
 // --------------------------------
-class TempHumidSensor {
-  long pollTime;
-  unsigned long previousPoll;
+class SensorSuite {
+  long pollTime = 1000;
+  unsigned long previousPoll = 0;
 
 public:
-  TempHumidSensor() {
+  SensorSuite() {
   }
 
-  void DisplayReadings(char x) {
-    DHT.read22(dht_apin);
+  bool Update() {
+    unsigned long currentTime = millis();
+    if (currentTime - previousPoll >= pollTime) {
+      previousPoll = currentTime;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  void RenderFullScreen(char* sensorName) {
+    tft.fillScreen(Blank_Color);
+    tft.setCursor(0, 0);
     tft.setTextColor(Text_Color);
     tft.setTextSize(4);
-    tft.fillRect(20, 40, tft.width() - 20, tft.height() - 40, Sensor_Color);
-    if (x = 't') {
-      tft.println(GetTemp());
-    } else if (x = 'h') {
-      tft.println(GetHumidity());
-    } else if (x = 'b') {
-      tft.println(GetTemp());
-      tft.println(GetHumidity());
-    } else {
-      return;
-    }
+    tft.println(sensorName);
+    tft.setTextSize(2);
+  }
+
+  void RenderPopup(char* sensorName) {
+    tft.fillRect(20, 50, tft.width()-40, tft.height()-100, Blank_Color);
+    tft.setCursor(25, 60);
+    tft.setTextColor(Text_Color);
+    tft.setTextSize(2);
+    tft.print("Food is Good");
+  }
+};
+
+class TempHumidSensor : public SensorSuite {
+public:
+  TempHumidSensor() {
   }
 
   double GetHumidity() {
@@ -88,37 +115,6 @@ public:
 
   double GetTemp() {
     return DHT.temperature;
-  }
-
-  bool Update() {
-    unsigned long currentTime = millis();
-
-    if (currentTime - previousPoll >= pollTime) {
-      previousPoll = currentTime;
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-
-class UltraSonicSensor {
-public:
-  UltraSonicSensor() {
-  }
-};
-
-class SensorSuite {  // Must come after specifc sensor classes in order to use composition method instead of inheretance
-  TempHumidSensor internalTempHumid;
-  UltraSonicSensor distanceSensor;
-
-public:
-  SensorSuite() {
-  }
-
-  void displayInternalTempHumid(char x) {
-    internalTempHumid.DisplayReadings(x);
   }
 };
 
@@ -188,29 +184,29 @@ class Menu {
   static const int _childFont = 2;
   static int _childYBound;
   static int _headerYBound;
-  SensorSuite* _sensorSuite;
+  SensorSuite* _sensor;
+
 
 public:
-  Menu(const char menuName[], const char childOf[])
+  Menu(const char menuName[], const char childOf[]) // for non-sensor menus
     : _menuName(menuName), _childOf(childOf) {
   }
-  Menu(const char menuName[], const char childOf[], SensorSuite* sensorSuite)  // for menus that have sensors on them
-    : _menuName(menuName), _childOf(childOf), _sensorSuite(sensorSuite) {
+  Menu(const char menuName[], const char childOf[], SensorSuite* sensor) // for menus with sensor displays
+    : _menuName(menuName), _childOf(childOf), _sensor(sensor) {
   }
-
 
   void Draw() {
     DrawMenu();
     DrawChildren();
     CalcTouchBounds();
-    //DrawTouchBounds();
-    CallSensor();
+    CallSensor("popup");
   }
 
-  void CallSensor() {
-    if (_menuName == "Temperature" && _sensorSuite != nullptr) { // Note: I corrected the spelling of "Temperature"
-      _sensorSuite->displayInternalTempHumid('t');
+  void CallSensor(char* renderType) {
+    if (_sensor != nullptr) {
+      _sensor->RenderPopup(renderType);
     }
+
   }
 
   void DrawMenu() {
@@ -578,13 +574,14 @@ public:
 // Initializations ----------------
 // --------------------------------
 SensorSuite tricorder1;
+TempHumidSensor thSensor;
 
 Menu obj[] = {
   Menu("Main Menu", "None"),                       //0
   Menu("Enviroment", "Main Menu"),                 //1
-  Menu("Temperature", "Enviroment", &tricorder1),  //2
+  Menu("Temperature", "Enviroment", &thSensor),     //2
   Menu("Body Profile", "Main Menu"),               //3
-  Menu("Humidity", "Enviroment", &tricorder1),     //4
+  Menu("Humidity", "Enviroment", &thSensor),        //4
   Menu("Location", "Main Menu"),                   //5
   Menu("GPS", "Location"),                         //6
   Menu("Barometric Pressure", "Enviroment"),       //7
