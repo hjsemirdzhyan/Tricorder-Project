@@ -1,12 +1,19 @@
 # Tricorder
 
+![star_trek_voyager_tricorder](https://github.com/hjsemirdzhyan/Tricorder-Project/assets/70782656/eb5d3668-dec2-4baf-b391-a957ce3990b3)
 ![image](https://user-images.githubusercontent.com/70782656/236332382-bcf56a1f-6522-419e-805b-ac4f0d44fce2.png)
+![image](https://github.com/hjsemirdzhyan/Tricorder-Project/assets/70782656/0ce92426-e058-42db-bb9d-420fc919b879)
 
 End goal is to have a functional sensor device
 
-Arduino Tricorder Ideas
+Resources
+* https://store-usa.arduino.cc/collections/sensors-environment?page=3&grid_list=list-view
+* https://randomnerdtutorials.com/21-arduino-modules-you-can-buy-for-less-than-2/
+* https://misclab.umeoce.maine.edu/boss/Arduino/bensguides/Arduino_Sensors_Beginners_Guide.pdf
+* Improving An Already Phenomenal Star Trek Prop | Hackaday
+* https://imgur.com/gallery/Ul3FW0y
 
-Sensors to add
+Sensors to Add
 * Temp and humidity sensor
 * Distance meter
     * Using ultrasonic sensor
@@ -38,7 +45,7 @@ Sensors to add
 * IR detector
     * V1, detects
     * V2, measures
-    * V3, locates 
+    * V3, locates
         * https://store-usa.arduino.cc/collections/sensors-environment/products/grove-80cm-infrared-proximity-sensor
 * Light sensor
 * Air pressure/altitude sensor
@@ -69,19 +76,13 @@ Sensors to add
 * Microwave sensor
     * https://lastminuteengineers.com/rcwl0516-microwave-radar-motion-sensor-arduino-tutorial/
 
-
-Resources
-* https://store-usa.arduino.cc/collections/sensors-environment?page=3&grid_list=list-view
-* https://randomnerdtutorials.com/21-arduino-modules-you-can-buy-for-less-than-2/
-* https://misclab.umeoce.maine.edu/boss/Arduino/bensguides/Arduino_Sensors_Beginners_Guide.pdf
-
-
 Plan
 * Setup Arduino to be easy to plug stuff into. Really want to work with the nano but the uno might have more versatility
 * Add buttons and knobs first for controlling whatever sensor I plug in. No doubt I’ll need to do manual calibrations so might as well have those ready for me. Add a buzzer as well, for audio feedback. And an RGB LED that flashes different colors to mean good or bad stuff. 
 * Add an LCD. I’ll need to eventually and could be really useful if using the serial monitor just isn’t an option. Just set it up to display hard coded text for now. Just to show it’s up and running. Can utilize it as needed. 
-* Preplan how to deal with peripherals that need contact in order to measure. Maybe design a second breakout board that plugs into the firsts as an extension. Would also need to program it so that it detects when the second board is attached. Something simple like if voltage is high, assume peripheral boards are attached and start reading from there as well. Eventually will need to make this wireless using an RF 433MHz transmitter/reader. https://randomnerdtutorials.com/rf-433mhz-transmitter-receiver-module-with-arduino/
+* Preplan how to deal with peripherals that need contact in order to measure. Maybe design a second breakout board that plugs into the firsts as an extension. Would also need to program it so that it detects when the second board is attached. Something simple like if voltage is high, assume peripheral boards are attached and start reading from there as well. Eventually will need to make this wireless using an RF 433MHz transmitter/reader.https://randomnerdtutorials.com/rf-433mhz-transmitter-receiver-module-with-arduino/
 * Will need to build out code in two categories. At least. First being passive sensors which would be built into the primary board. Second would be the active sensors requiring a peripheral. Like the force, strain and pH sensors. There should be a third category too where I keep all my house keeping code. Like the code to check if the peripheral board connected. 
+* Build touchscreen UI
 
 Sensor Categories
 * Environmental
@@ -115,6 +116,15 @@ Sensor Categories
     * Heartbeat meter
     * Thermal sensor
     * pH sensor
-    * Strain gauge
+    * Staring gauge
     * Force Sensor
     * Distance
+
+Functionality
+* Lock onto particular sound and measure only its db
+* Sound direction finder
+* Frequency direction finder
+* IR direction finder
+* Visible light direction finder
+* Compass
+* Calculator

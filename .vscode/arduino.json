@@ -1,6 +1,7 @@
 {
-    "board": "arduino:avr:uno",
+    "board": "arduino:avr:mega",
     "programmer": "avrisp",
-    "port": "/dev/tty.usbmodem1101",
-    "sketch": "test_UI_Refactor/test_UI_Refactor.ino"
+    "port": "/dev/tty.usbmodem14701",
+    "sketch": "test_SensorClass/test_SensorClass.ino",
+    "configuration": "cpu=atmega2560"
 }
