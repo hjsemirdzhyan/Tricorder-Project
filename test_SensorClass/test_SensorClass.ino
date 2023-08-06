@@ -76,6 +76,10 @@ public:
   SensorSuite() {
   }
 
+  virtual void PrintData() {
+    tft.print("Sensor not found");
+  }
+
   bool Update() {
     unsigned long currentTime = millis();
     if (currentTime - previousPoll >= pollTime) {
@@ -97,11 +101,11 @@ public:
 
   void RenderPopup(char* sensorName) {
     tft.fillRect(20, 50, tft.width()-40, tft.height()-100, Blank_Color);
-    tft.setCursor(25, 60);
+    tft.setCursor(30, 60);
     tft.setTextColor(Text_Color);
     tft.setTextSize(2);
-    tft.print("Food is Good");
-  }
+    PrintData();
+    }
 };
 
 class TempHumidSensor : public SensorSuite {
@@ -109,12 +113,26 @@ public:
   TempHumidSensor() {
   }
 
+  void PrintData() override {
+    tft.print("Temp: ");
+    tft.println(GetTemp());
+    tft.setCursor(30, 80);
+    tft.print("Humid: ");
+    tft.println(GetHumidity());
+  }
+
   double GetHumidity() {
+    ReadSensor();
     return DHT.humidity; 
   }
 
   double GetTemp() {
+    ReadSensor();
     return DHT.temperature;
+  }
+
+  double ReadSensor() {
+    return DHT.read11(dht_apin);
   }
 };
 
@@ -204,7 +222,8 @@ public:
 
   void CallSensor(char* renderType) {
     if (_sensor != nullptr) {
-      _sensor->RenderPopup(renderType);
+      _sensor->RenderPopup(_menuName);
+
     }
 
   }
@@ -579,9 +598,8 @@ TempHumidSensor thSensor;
 Menu obj[] = {
   Menu("Main Menu", "None"),                       //0
   Menu("Enviroment", "Main Menu"),                 //1
-  Menu("Temperature", "Enviroment", &thSensor),     //2
+  Menu("Temp/Humid", "Enviroment", &thSensor),     //2
   Menu("Body Profile", "Main Menu"),               //3
-  Menu("Humidity", "Enviroment", &thSensor),        //4
   Menu("Location", "Main Menu"),                   //5
   Menu("GPS", "Location"),                         //6
   Menu("Barometric Pressure", "Enviroment"),       //7
