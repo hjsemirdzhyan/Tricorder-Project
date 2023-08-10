@@ -345,7 +345,7 @@ int* Menu::GetChildrenArray() {
 
 static void Menu::OpenSelected() {  // needs to get the selected menu number and then pass that menu number into the draw method.
   _openMenu = _sel_menuNum;
-  ;
+  ;// not sure what this is for. 
   SetSelMenu(0);
   obj[_openMenu].Draw();
 }
