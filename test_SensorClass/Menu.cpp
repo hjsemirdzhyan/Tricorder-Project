@@ -16,8 +16,10 @@ void Menu::Draw() {
 }
 
 void Menu::CallSensor() {
-  if (_menuName == "Temp/Humid") { // Note: I corrected the spelling of "Temperature"
-    //_sensor.PrintData();
+  if (_menuName == obj[2]._menuName) {  // should turn out to be if(_menuName == "Temp/Humid")
+    _sensor.GetTempHumid().PrintTempData();
+  } else if (_menuName == obj[13]._menuName) {
+      _sensor.GetUltrasonic().PrintUltraData();
   }
 }
 
@@ -356,7 +358,7 @@ int* Menu::GetChildrenArray() {
 
 static void Menu::OpenSelected() {  // needs to get the selected menu number and then pass that menu number into the draw method.
   _openMenu = _sel_menuNum;
-  ;// not sure what this is for. 
+  ;  // not sure what this is for.
   SetSelMenu(0);
   obj[_openMenu].Draw();
 }

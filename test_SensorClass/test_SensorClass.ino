@@ -38,8 +38,6 @@
 #define XM A3  // must be an analog pin, use "An" notation!
 #define YM 8   // can be any digital pin
 #define XP 9   // can be any digital pin
-#define pingPin 7
-#define echoPin 6
 #define TFT_DC 9
 #define TFT_CS 10
 
@@ -55,70 +53,17 @@ int numOfMenus = 0;  // should move into menu class as a static int
 // --------------------------------
 // Classes ------------------------
 // --------------------------------
-class Ultrasonic {
-  unsigned long _previousPoll;  // will store last time temp/humid reading was updated
-  long _pollTime;               // how often in milliseconds to poll the temp sensor
-  long _duration;
-  long _inches;
-  long _cm;
 
-public:
-  Ultrasonic() {
-  }
-
-  bool Update(long time) {
-    _pollTime = time;
-    unsigned long currentTime = millis();
-
-    if (currentTime - _previousPoll >= _pollTime) {
-      _previousPoll = currentTime;
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  void PrintUltraData() {
-    CalcDistance();
-    tft.print(_duration);
-    tft.print("ms, ");
-    tft.print(_inches);
-    tft.print("in, ");
-    tft.print(_cm);
-    tft.println("cm");
-  }
-
-  long CalcDistance() {
-    long delay = 100;
-    long clear = 2;
-    long burst = 10;
-
-    if (Update(delay) == true) {
-      pinMode(pingPin, OUTPUT);
-      pinMode(echoPin, INPUT);
-      digitalWrite(pingPin, LOW);
-      if (Update(clear) == true) {
-        digitalWrite(pingPin, HIGH);
-      }
-      if (Update(burst) == true) {
-        digitalWrite(pingPin, LOW);
-      }
-      _duration = pulseIn(echoPin, HIGH);
-      _inches = _duration / 74 / 2;
-      _cm = _duration / 29 / 2;
-    }
-  }
-};
 
 // --------------------------------
 // Initializations ----------------
 // --------------------------------
-//Sensor sensorSuite(0);
+Sensor sensorSuite;
 
 Menu obj[] = {
   Menu("Main Menu", "None"),                  //0
   Menu("Enviroment", "Main Menu"),            //1
-  Menu("Temp/Humid", "Enviroment"),           //2
+  Menu("Temp/Humid", "Enviroment", sensorSuite),           //2
   Menu("Body Profile", "Main Menu"),          //3
   Menu("Location", "Main Menu"),              //5
   Menu("GPS", "Location"),                    //6
@@ -129,7 +74,7 @@ Menu obj[] = {
   Menu("RFID", "SubGhz"),                     //11
   Menu("Blutooth", "SubGhz"),                 //12
   Menu("Accelerometer", "Enviroment"),        //13
-  Menu("Integrated Circuit", "Main Menu"),    //14
+  Menu("Ultrasonic", "Main Menu", sensorSuite),    //14
 };
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable

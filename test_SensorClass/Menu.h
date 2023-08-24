@@ -15,6 +15,8 @@ const int calInLay = 20;
 const int crosshairSize = 20;
 const bool menuDebug = false;
 
+class TempHumid;
+
 class Menu {
   int _numOfChildren = 0;  //  wont need anymore if array is storing children of parent menu...maybe
   int* _childrenArray;     //  a pointer to an array of addresses of children menu numbers (basically, index numbers)
