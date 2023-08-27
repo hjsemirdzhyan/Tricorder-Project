@@ -16,8 +16,11 @@ bool Ultrasonic::Update(long time) {
 
 void Ultrasonic::PrintUltraData() {
   CalcDistance();
+  tft.setCursor(0, 80);
+  tft.setTextSize(2);
+  tft.setTextColor(ILI9341_YELLOW, ILI9341_BLUE);
   tft.print(_duration);
-  tft.print("ms, ");
+  tft.println("ms, ");
   tft.print(_inches);
   tft.print("in, ");
   tft.print(_cm);

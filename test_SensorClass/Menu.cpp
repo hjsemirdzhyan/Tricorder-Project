@@ -12,14 +12,15 @@ void Menu::Draw() {
   DrawMenu();
   DrawChildren();
   CalcTouchBounds();
-  CallSensor();
 }
 
 void Menu::CallSensor() {
-  if (_menuName == obj[2]._menuName) {  // should turn out to be if(_menuName == "Temp/Humid")
+  if (_menuName == obj[2]._menuName) {
     _sensor.GetTempHumid().PrintTempData();
   } else if (_menuName == obj[13]._menuName) {
-      _sensor.GetUltrasonic().PrintUltraData();
+    _sensor.GetUltrasonic().PrintUltraData();
+  } else {
+    return;
   }
 }
 
@@ -361,6 +362,10 @@ static void Menu::OpenSelected() {  // needs to get the selected menu number and
   ;  // not sure what this is for.
   SetSelMenu(0);
   obj[_openMenu].Draw();
+}
+
+bool Menu::HasSensor() {
+  return _sensor.IsSensor();
 }
 
 static void Menu::GoBack() {

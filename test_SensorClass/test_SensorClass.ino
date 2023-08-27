@@ -53,34 +53,50 @@ int numOfMenus = 0;  // should move into menu class as a static int
 // --------------------------------
 // Classes ------------------------
 // --------------------------------
+class DelayTracker {
+  unsigned long _previousPoll;  // will store last time temp/humid reading was updated
+  long _pollTime;               // how often in milliseconds to poll the temp sensor
+  long _duration;
 
+public:
+  Update(long time) {
+    _pollTime = time;
+    unsigned long currentTime = millis();
+
+    if (currentTime - _previousPoll >= _pollTime) {
+      _previousPoll = currentTime;
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
 
 // --------------------------------
 // Initializations ----------------
 // --------------------------------
 Sensor sensorSuite;
+DelayTracker menuRefresh;
 
 Menu obj[] = {
   Menu("Main Menu", "None"),                  //0
   Menu("Enviroment", "Main Menu"),            //1
   Menu("Temp/Humid", "Enviroment", sensorSuite),           //2
   Menu("Body Profile", "Main Menu"),          //3
-  Menu("Location", "Main Menu"),              //5
-  Menu("GPS", "Location"),                    //6
-  Menu("Barometric Pressure", "Enviroment"),  //7
-  Menu("Hello World", "Main Menu"),           //8
-  Menu("SubGhz", "Main Menu"),                //9
-  Menu("NFC", "SubGhz"),                      //10
-  Menu("RFID", "SubGhz"),                     //11
-  Menu("Blutooth", "SubGhz"),                 //12
-  Menu("Accelerometer", "Enviroment"),        //13
-  Menu("Ultrasonic", "Main Menu", sensorSuite),    //14
+  Menu("Location", "Main Menu"),              //4
+  Menu("GPS", "Location"),                    //5
+  Menu("Barometric Pressure", "Enviroment"),  //6
+  Menu("Hello World", "Main Menu"),           //7
+  Menu("SubGhz", "Main Menu"),                //8
+  Menu("NFC", "SubGhz"),                      //9
+  Menu("RFID", "SubGhz"),                     //10
+  Menu("Blutooth", "SubGhz"),                 //11
+  Menu("Accelerometer", "Enviroment"),        //12
+  Menu("Ultrasonic", "Main Menu", sensorSuite),    //13
 };
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable
-
 ScreenPoint sp;
-
 Button sel(tft.width() - 50, tft.height() - 30, 50, 30, "Select");
 Button back(0, tft.height() - 30, 50, 30, "Back");
 
@@ -252,6 +268,17 @@ void openMenuVars() {
   Serial.println(Menu::GetSelMenuNum());
 }
 
+void sensorPoll () {
+  if (menuRefresh.Update(500) == true) {
+    int openMenu = Menu::GetOpenMenu();
+    if (obj[openMenu].HasSensor() == true) {
+      obj[openMenu].CallSensor();
+    } else {
+      return;
+    }
+  }
+}
+
 // --------------------------------
 // Loops --------------------------
 // --------------------------------
@@ -264,4 +291,5 @@ void setup() {
 
 void loop() {
   touchDetect();
+  sensorPoll();
 }

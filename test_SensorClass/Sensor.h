@@ -15,5 +15,6 @@ public:
   void PrintData();
   TempHumid& GetTempHumid();
   Ultrasonic& GetUltrasonic();
+  bool IsSensor();
 
 };

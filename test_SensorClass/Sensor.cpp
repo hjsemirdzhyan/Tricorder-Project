@@ -17,3 +17,7 @@ TempHumid& Sensor::GetTempHumid() {
 Ultrasonic& Sensor::GetUltrasonic() {
   return ultrasonic1;
 }
+
+bool Sensor::IsSensor() {
+  return true;
+}
