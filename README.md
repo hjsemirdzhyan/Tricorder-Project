@@ -1,8 +1,7 @@
 # Tricorder
 
-![star_trek_voyager_tricorder](https://github.com/hjsemirdzhyan/Tricorder-Project/assets/70782656/eb5d3668-dec2-4baf-b391-a957ce3990b3)
+![star_trek_voyager_tricorder](https://github.com/hjsemirdzhyan/Tricorder-Project/assets/70782656/36f0a92a-f253-48a6-81a4-35d2d03b48c5)
 ![image](https://user-images.githubusercontent.com/70782656/236332382-bcf56a1f-6522-419e-805b-ac4f0d44fce2.png)
-![image](https://github.com/hjsemirdzhyan/Tricorder-Project/assets/70782656/0ce92426-e058-42db-bb9d-420fc919b879)
 
 End goal is to have a functional sensor device
 
