@@ -74,6 +74,7 @@ Sensors to Add
 * Walkie talkie
 * Microwave sensor
     * https://lastminuteengineers.com/rcwl0516-microwave-radar-motion-sensor-arduino-tutorial/
+* EMF Sensor
 
 Plan
 * Setup Arduino to be easy to plug stuff into. Really want to work with the nano but the uno might have more versatility

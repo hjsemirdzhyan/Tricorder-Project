@@ -33,6 +33,7 @@
 #include "Button.h"
 #include "Menu.h"
 #include "dht.h"
+#include "DelayTracker.h"
 
 #define YP A2  // must be an analog pin, use "An" notation!
 #define XM A3  // must be an analog pin, use "An" notation!
@@ -53,24 +54,7 @@ int numOfMenus = 0;  // should move into menu class as a static int
 // --------------------------------
 // Classes ------------------------
 // --------------------------------
-class DelayTracker {
-  unsigned long _previousPoll;  // will store last time temp/humid reading was updated
-  long _pollTime;               // how often in milliseconds to poll the temp sensor
-  long _duration;
 
-public:
-  Update(long time) {
-    _pollTime = time;
-    unsigned long currentTime = millis();
-
-    if (currentTime - _previousPoll >= _pollTime) {
-      _previousPoll = currentTime;
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
 
 // --------------------------------
 // Initializations ----------------
