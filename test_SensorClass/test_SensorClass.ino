@@ -44,11 +44,11 @@
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-dht DHT; //cant move this into tempHumid.h for some fucking reason
+dht DHT;  //cant move this into tempHumid.h for some fucking reason
 
 float xCalM = 0.0, yCalM = 0.0;  // gradients
 float xCalC = 0.0, yCalC = 0.0;  // y axis crossing points
-const bool touchDebug = false;
+const bool touchDebug = true;
 int numOfMenus = 0;  // should move into menu class as a static int
 
 // --------------------------------
@@ -63,20 +63,20 @@ Sensor sensorSuite;
 DelayTracker menuRefresh;
 
 Menu obj[] = {
-  Menu("Main Menu", "None"),                  //0
-  Menu("Enviroment", "Main Menu"),            //1
-  Menu("Temp/Humid", "Enviroment", sensorSuite),           //2
-  Menu("Body Profile", "Main Menu"),          //3
-  Menu("Location", "Main Menu"),              //4
-  Menu("GPS", "Location"),                    //5
-  Menu("Barometric Pressure", "Enviroment"),  //6
-  Menu("Hello World", "Main Menu"),           //7
-  Menu("SubGhz", "Main Menu"),                //8
-  Menu("NFC", "SubGhz"),                      //9
-  Menu("RFID", "SubGhz"),                     //10
-  Menu("Blutooth", "SubGhz"),                 //11
-  Menu("Accelerometer", "Enviroment"),        //12
-  Menu("Ultrasonic", "Main Menu", sensorSuite),    //13
+  Menu("Main Menu", "None"),                      //0
+  Menu("Enviroment", "Main Menu"),                //1
+  Menu("Temp/Humid", "Enviroment", sensorSuite),  //2
+  Menu("Body Profile", "Main Menu"),              //3
+  Menu("Location", "Main Menu"),                  //4
+  Menu("GPS", "Location"),                        //5
+  Menu("Barometric Pressure", "Enviroment"),      //6
+  Menu("Hello World", "Main Menu"),               //7
+  Menu("SubGhz", "Main Menu"),                    //8
+  Menu("NFC", "SubGhz"),                          //9
+  Menu("RFID", "SubGhz"),                         //10
+  Menu("Blutooth", "SubGhz"),                     //11
+  Menu("Accelerometer", "Enviroment"),            //12
+  Menu("Ultrasonic", "Main Menu", sensorSuite),   //13
 };
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable
@@ -104,7 +104,12 @@ void startup() {
   Serial.println(menuDebug);
   calibrateTouchScreen();
   delay(500);
+
+  openMenuVars();
+
   obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
+
+  openMenuVars();
 
   renderNavButtons();
   delay(500);
@@ -216,7 +221,7 @@ void touchDetect() {
       Menu::GoBack();
       renderNavButtons();
     }
-
+    //openMenuVars(); for debugging when needed
     if (touchDebug == true) {
       Serial.print("    Raw X: ");
       Serial.print(touchPoint.x);
@@ -252,7 +257,7 @@ void openMenuVars() {
   Serial.println(Menu::GetSelMenuNum());
 }
 
-void sensorPoll () {
+void sensorPoll() {
   if (menuRefresh.Update(500) == true) {
     int openMenu = Menu::GetOpenMenu();
     if (obj[openMenu].HasSensor() == true) {

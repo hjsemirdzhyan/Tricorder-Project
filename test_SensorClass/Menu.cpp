@@ -282,7 +282,6 @@ static void Menu::SetObj(Menu* _obj) {
 }
 
 static void Menu::SetSelMenu(int menuItem) {  //  takes in the menuItem and sets menuNumber
-
   if (obj[_openMenu]._numOfChildren == 0) {
     _sel_menuNum = _openMenu;
   } else {
@@ -298,7 +297,7 @@ static void Menu::SetSelMenu(int menuItem) {  //  takes in the menuItem and sets
     Serial.println(obj[_openMenu]._menuName);
     Serial.print("    obj[_openMenu]._numOfChildren: ");
     Serial.println(obj[_openMenu]._numOfChildren);
-    Serial.print("    _sel_MenuNum: ");
+    Serial.print("    _sel_menuNum: ");
     Serial.println(_sel_menuNum);
     Serial.print("    _sel_menuItem: ");
     Serial.println(_sel_menuItem);
@@ -345,7 +344,7 @@ int Menu::GetNumOfChildren() {
 }
 
 int* Menu::GetChildrenArray() {
-  if (false == true) {
+  if (menuDebug == true) {
     Serial.println("Method, GetChildrenArray");
     Serial.print("    Returned: ");
     for (int i = 0; i < _numOfChildren; i++) {
@@ -359,7 +358,7 @@ int* Menu::GetChildrenArray() {
 
 static void Menu::OpenSelected() {  // needs to get the selected menu number and then pass that menu number into the draw method.
   _openMenu = _sel_menuNum;
-  ;  // not sure what this is for.
+  obj[_openMenu].GenerateChildren(); // not ideal. This runs twice. Once here and once on draw.
   SetSelMenu(0);
   obj[_openMenu].Draw();
 }
