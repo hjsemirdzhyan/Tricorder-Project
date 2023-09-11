@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #include "Ultrasonic.h"
 
 Ultrasonic::Ultrasonic() {}
@@ -25,6 +26,8 @@ void Ultrasonic::PrintUltraData() {
   tft.print("in, ");
   tft.print(_cm);
   tft.println("cm");
+  tft.print("Time: ");
+  tft.println(millis());
 }
 
 long Ultrasonic::CalcDistance() {
@@ -32,15 +35,18 @@ long Ultrasonic::CalcDistance() {
   long clear = 2;
   long burst = 10;
 
-  if (Update(delay) == true) {
+  if (ultrasonicRefresh.Update(delay) == true) {
+    Serial.println("in 1");
     pinMode(pingPin, OUTPUT);
     pinMode(echoPin, INPUT);
     digitalWrite(pingPin, LOW);
-    if (Update(clear) == true) {
+    if (ultrasonicRefresh.Update(clear) == true) {
       digitalWrite(pingPin, HIGH);
+      Serial.println("in 2");
     }
-    if (Update(burst) == true) {
+    if (ultrasonicRefresh.Update(burst) == true) {
       digitalWrite(pingPin, LOW);
+      Serial.println("in 3");
     }
     _duration = pulseIn(echoPin, HIGH);
     _inches = _duration / 74 / 2;

@@ -5,6 +5,7 @@
 #define echoPin 6
 
 extern Adafruit_ILI9341 tft;
+extern DelayTracker ultrasonicRefresh;
 
 class Ultrasonic {
   unsigned long _previousPoll;  // will store last time temp/humid reading was updated

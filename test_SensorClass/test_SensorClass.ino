@@ -105,11 +105,11 @@ void startup() {
   calibrateTouchScreen();
   delay(500);
 
-  openMenuVars();
+  //openMenuVars();
 
   obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
 
-  openMenuVars();
+  //openMenuVars();
 
   renderNavButtons();
   delay(500);
@@ -281,4 +281,5 @@ void setup() {
 void loop() {
   touchDetect();
   sensorPoll();
+
 }
