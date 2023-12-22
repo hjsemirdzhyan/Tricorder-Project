@@ -34,12 +34,11 @@ long Ultrasonic::CalcDistance() {
   long delay = 100;
   long clear = 2;
   long burst = 10;
-
   if (ultrasonicRefresh.Update(delay) == true) {
-    Serial.println("in 1");
     pinMode(pingPin, OUTPUT);
     pinMode(echoPin, INPUT);
     digitalWrite(pingPin, LOW);
+    Serial.println("in 1");
     if (ultrasonicRefresh.Update(clear) == true) {
       digitalWrite(pingPin, HIGH);
       Serial.println("in 2");

@@ -4,7 +4,7 @@
 TempHumid::TempHumid() {}
 
 void TempHumid::PrintTempData() {
-  CalcTempHumid();
+  //CalcTempHumid(); make independend call before menu class. 
   tft.setCursor(0, 80);
   tft.setTextSize(2);
   tft.setTextColor(ILI9341_YELLOW, ILI9341_BLUE);

@@ -1,4 +1,13 @@
 /*
+Notes: 12/22/23
+Due to the growing complexity of using individuallized .h and .cpp files I've decided
+to only use this method for the menu class. Starting with the Sensor class, I need to move 
+the remainder of the classes back into this main sketch. I'll decide whether 
+to leave anything else out of the main sketch at a later date. But for now I need
+to move Sensor, Ultrasonic, and TempHumid back into here. 
+*/
+
+/*
    pin outs:
     LCD___Mega___Uno___Color
     CLK----D52---D13---Red
@@ -10,18 +19,7 @@
     XNeg---A3----A3----Red
     YNeg---D8----D8----Orange
     Xpos---D9----D9----Blue
-
-    This class will host rendering screens (for now) that the sensors can use to display
-    their data on a menu. The class will also host any of the methods needed in order to 
-    use multiple sensors to provide results. Essentally, all sensor readings will go thru
-    this class, regardless of if it needs to be combined with other sensors or not.
-
-    Specific sensor classes will have functions specific to their own sensor abilities.
-    This class can read temp and humidity. The ultrasonic sensor can use those readings 
-    to provide more preceise results but that type of functionality will need to happen
-    in the SensorSuite class, not in either this class or the ultrasonic class.
 */
-
 
 // --------------------------------
 // Libraries & Definitions --------
@@ -32,55 +30,114 @@
 #include "TouchScreen.h"
 #include "Button.h"
 #include "Menu.h"
-#include "dht.h"
-#include "DelayTracker.h"
 
 #define YP A2  // must be an analog pin, use "An" notation!
 #define XM A3  // must be an analog pin, use "An" notation!
 #define YM 8   // can be any digital pin
 #define XP 9   // can be any digital pin
-#define TFT_DC 9
-#define TFT_CS 10
-
-TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-dht DHT;  //cant move this into tempHumid.h for some fucking reason
 
 float xCalM = 0.0, yCalM = 0.0;  // gradients
 float xCalC = 0.0, yCalC = 0.0;  // y axis crossing points
-const bool touchDebug = true;
-int numOfMenus = 0;  // should move into menu class as a static int
 
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
+
+#define TFT_DC 9
+#define TFT_CS 10
+
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+
+const bool touchDebug = false;
+int numOfMenus = 0;  // should move into menu class as a static int
 // --------------------------------
 // Classes ------------------------
 // --------------------------------
+class DelayTracker {
+  unsigned long _previousPoll;  // will store last time temp/humid reading was updated
+  long _pollTime;               // how often in milliseconds to poll the temp sensor
+  long _duration;
 
+public:
+  Update(long time) {
+    _pollTime = time;
+    unsigned long currentTime = millis();
+
+    if (currentTime - _previousPoll >= _pollTime) {
+      _previousPoll = currentTime;
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+class TempHumid {
+  unsigned long _previousPoll;  // will store last time temp/humid reading was updated
+  long _pollTime;               // how often in milliseconds to poll the temp sensor
+  long _duration;
+  double _temp;
+  double _humid;
+
+public:
+  void PrintTempData() {
+    //CalcTempHumid(); make independend call before menu class.
+    tft.setCursor(0, 80);
+    tft.setTextSize(2);
+    tft.setTextColor(ILI9341_YELLOW, ILI9341_BLUE);
+    tft.print("Temp: ");
+    tft.print(_temp);
+    tft.print("C ");
+    tft.print((_temp * 1.800) + 32.00);
+    tft.println("F ");
+    tft.print("Humid: ");
+    tft.print(_humid);
+    tft.println("%");
+  }
+  double CalcTempHumid() {
+    long delay = 2000;
+
+    if (Update(delay) == true) {
+      DHT.read11(dht_apin);  // remember to limit poll frequency
+      _temp = DHT.temperature;
+      _humid = DHT.humidity;
+    }
+  }
+};
+
+class Sensor { //currently in progress.
+  TempHumid tempHumid1;
+  Ultrasonic ultrasonic1;
+  int _message = 0;
+public:
+
+};
 
 // --------------------------------
 // Initializations ----------------
 // --------------------------------
-Sensor sensorSuite;
-DelayTracker menuRefresh;
+DelayTracker dt;
 
 Menu obj[] = {
-  Menu("Main Menu", "None"),                      //0
-  Menu("Enviroment", "Main Menu"),                //1
-  Menu("Temp/Humid", "Enviroment", sensorSuite),  //2
-  Menu("Body Profile", "Main Menu"),              //3
-  Menu("Location", "Main Menu"),                  //4
-  Menu("GPS", "Location"),                        //5
-  Menu("Barometric Pressure", "Enviroment"),      //6
-  Menu("Hello World", "Main Menu"),               //7
-  Menu("SubGhz", "Main Menu"),                    //8
-  Menu("NFC", "SubGhz"),                          //9
-  Menu("RFID", "SubGhz"),                         //10
-  Menu("Blutooth", "SubGhz"),                     //11
-  Menu("Accelerometer", "Enviroment"),            //12
-  Menu("Ultrasonic", "Main Menu", sensorSuite),   //13
+  Menu("Main Menu", "None"),                  //0
+  Menu("Enviroment", "Main Menu"),            //1
+  Menu("Temperature", "Enviroment"),          //2
+  Menu("Body Profile", "Main Menu"),          //3
+  Menu("Humidity", "Enviroment"),             //4
+  Menu("Location", "Main Menu"),              //5
+  Menu("GPS", "Location"),                    //6
+  Menu("Barometric Pressure", "Enviroment"),  //7
+  Menu("Hello World", "Main Menu"),           //8
+  Menu("SubGhz", "Main Menu"),                //9
+  Menu("NFC", "SubGhz"),                      //10
+  Menu("RFID", "SubGhz"),                     //11
+  Menu("Blutooth", "SubGhz"),                 //12
+  Menu("Accelerometer", "Enviroment"),        //13
+  Menu("Integrated Circuit", "Main Menu"),    //14
 };
 
 Menu* Menu::obj = nullptr;  //initialize the static member variable
+
 ScreenPoint sp;
+
 Button sel(tft.width() - 50, tft.height() - 30, 50, 30, "Select");
 Button back(0, tft.height() - 30, 50, 30, "Back");
 
@@ -104,13 +161,10 @@ void startup() {
   Serial.println(menuDebug);
   calibrateTouchScreen();
   delay(500);
-
-  //openMenuVars();
-
   obj[0].Draw();  // displays the starting menu (by running a lot of other methods first)
 
-  //openMenuVars();
-
+  //sel.initButton(tft.width() - 50, tft.height() - 30, 50, 30, "Select");
+  //back.initButton(0, tft.height() - 30, 50, 30, "Back");
   renderNavButtons();
   delay(500);
 }
@@ -221,7 +275,7 @@ void touchDetect() {
       Menu::GoBack();
       renderNavButtons();
     }
-    //openMenuVars(); for debugging when needed
+
     if (touchDebug == true) {
       Serial.print("    Raw X: ");
       Serial.print(touchPoint.x);
@@ -257,14 +311,14 @@ void openMenuVars() {
   Serial.println(Menu::GetSelMenuNum());
 }
 
-void sensorPoll() {
-  if (menuRefresh.Update(500) == true) {
-    int openMenu = Menu::GetOpenMenu();
-    if (obj[openMenu].HasSensor() == true) {
-      obj[openMenu].CallSensor();
-    } else {
-      return;
-    }
+void menuRefresh() {
+  int openMenu = Menu::GetOpenMenu();
+  if (openMenu == 13) {
+    //start ultrasonic polling
+  }
+
+  if (dt.Update(500) == true) {
+    //call draw function of the openMenu
   }
 }
 
@@ -280,6 +334,4 @@ void setup() {
 
 void loop() {
   touchDetect();
-  sensorPoll();
-
 }
