@@ -18,5 +18,5 @@ public:
   Ultrasonic();
   bool Update(long time);
   void PrintUltraData();
-long CalcDistance();  
+  long CalcDistance();  
 };
