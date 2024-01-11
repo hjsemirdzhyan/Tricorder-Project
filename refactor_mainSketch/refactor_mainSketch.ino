@@ -6,6 +6,7 @@
 #include "Adafruit_GFX.h"
 
 #include "DisplayStuff.h"
+#include "UserInterface.h"
 
 #define YP A2
 #define XM A3
@@ -15,32 +16,46 @@
 #define TFT_CS 10
 
 // --------------------------------
+// Initializations ----------------
+// --------------------------------
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+/*UserInterface menu[] = {
+  UserInterface("Main Menu", "None"),
+  UserInterface("Environment", "Main Menu"),
+  UserInterface("Temp/Humid", "Environment"),
+  UserInterface("Body Profile", "Main Menu"),
+  UserInterface("Location", "Main Menu"),
+  UserInterface("GPS", "Location"),
+  UserInterface("Barometric Pressure", "Environment"),
+  UserInterface("Hello World", "Main Menu"),
+  UserInterface("SubGhz", "Main Menu"),
+  UserInterface("NFC", "SubGhz"),
+  UserInterface("RFID", "SubGhz"),
+  UserInterface("Blutooth", "SubGhz"),
+  UserInterface("Accelerometer", "Environment"),
+  UserInterface("Ultrasonic", "Main Menu"),
+};*/
+
+// --------------------------------
 // Classes ------------------------
 // --------------------------------
 
 
 
 
-// --------------------------------
-// Initializations ----------------
-// --------------------------------
-TouchScreen ts = TouchScreen(XP, YP, XM, YM, 281);
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-
 
 
 // --------------------------------
 // Functions ----------------------
 // --------------------------------
-void startup() {
-  DisplayStuff::CalibrateTouch();
-}
-
 void setup() {
   Serial.begin(9600);
   tft.begin();
+  DisplayStuff::CalibrateTouch();
+  //numOfMenus = sizeof(menu) / sizeof(menu[0]);
+  //UserInterface::SetObj(menu);
 
-  startup();
 }
 
 // --------------------------------
