@@ -8,7 +8,7 @@ extern Adafruit_ILI9341 tft;
 extern float xCalM, yCalM;
 extern float xCalC, yCalC;
 
-class DisplayStuff {
+class DisplayStuff { // <--- convert this to a namespace. 
 public:
   static bool IsTouched();
   static void CalibrateTouch();
