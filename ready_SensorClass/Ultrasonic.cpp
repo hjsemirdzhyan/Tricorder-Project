@@ -30,6 +30,7 @@ void Ultrasonic::PrintUltraData() {
   tft.println(millis());
 }
 
+// Fixed by Codex on 2025-06-03: return the computed distance in centimeters
 long Ultrasonic::CalcDistance() {
   long delay = 100;
   long clear = 2;
@@ -51,4 +52,5 @@ long Ultrasonic::CalcDistance() {
     _inches = _duration / 74 / 2;
     _cm = _duration / 29 / 2;
   }
+  return _cm;
 }
